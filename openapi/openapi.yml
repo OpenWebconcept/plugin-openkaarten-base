@@ -1,0 +1,274 @@
+openapi: 3.1.0
+info:
+  title: OpenKaarten Plugin API
+  description: The OpenKaarten plugin adds Datalayers and Locations to WordPress which can be retrieved via the OpenKaarten REST API.
+  version: 1.0.0
+  contact:
+    email: service@acato.nl
+    url: https://www.acato.nl
+  license:
+    name: EUPL-1.2
+    url: https://opensource.org/licenses/EUPL-1.2
+paths:
+  /datasets:
+    get:
+      summary: Get datalayer items
+      description: Get datalayer items with optional filters
+      security: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: The page number to retrieve.
+          schema:
+            type: integer
+            default: 1
+            example: 2
+        - name: perpage
+          in: query
+          required: false
+          description: The number of items per page.
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+            example: 15
+        - name: slug
+          in: query
+          required: false
+          description: The slug of the datalayer.
+          schema:
+            type: string
+            example: "sportlocations"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataLayer'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+  /datasets/id/{id}:
+    get:
+      summary: Get dataset by id
+      description: Get details about a specific dataset.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the dataset to retrieve.
+          schema:
+            type: integer
+            format: int
+            minimum: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataLayer'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+  /datasets/id/{id}/{output_format}:
+    get:
+      summary: Get dataset by id in a specific output format
+      description: Get details about a specific dataset in a specific output format.
+      security: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the dataset to retrieve.
+          schema:
+            type: integer
+            format: int
+            minimum: 1
+        - name: output_format
+          in: path
+          required: true
+          description: The output format of the dataset.
+          schema:
+            type: string
+            example: "json"
+            enum: [ "json", "geojson" ]
+            default: "json"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataLayer'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+components:
+  schemas:
+    DataLayer:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of the datalayer.
+          example: "FeatureCollection"
+        id:
+          type: integer
+          format: int
+          description: The unique identifier for the datalayer.
+          example: 1
+        title:
+          type: string
+          description: The name of the datalayer.
+          example: "Sportlocations"
+        slug:
+          type: string
+          description: The slug of the datalayer.
+          example: "sportlocations"
+        excerpt:
+          type: string
+          description: A short description of the datalayer.
+          example: "All sportlocations in our city."
+          limit: 55 words
+        post_status:
+          type: string
+          description: The status of the datalayer.
+          example: "publish"
+          enum: [ "publish", "draft", "pending", "private" ]
+        properties:
+          type: array
+          description: The properties of the datalayer.
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                description: The key of the property.
+                example: "status"
+              label:
+                type: string
+                description: The label of the property.
+                example: "Status"
+              type:
+                type: string
+                description: The input type of the property.
+                example: "text"
+        source_file:
+          type: string
+          description: The source file of the property.
+          example: "https://www.example.com/sportlocations.json"
+        features:
+          type: array
+          description: The locations connected to the datalayer.
+          items:
+            $ref: '#/components/schemas/Location'
+    Location:
+      type: object
+      properties:
+        type:
+            type: string
+            description: The type of the location.
+            example: "Feature"
+        id:
+          type: integer
+          format: int
+          description: The unique identifier for the location.
+          example: 1
+        title:
+          type: string
+          description: The name of the location.
+          example: "Football Club XYZ"
+        slug:
+          type: string
+          description: The slug of the location.
+          example: "football-club-xyz"
+        excerpt:
+          type: string
+          description: A short description of the location.
+          example: "The best football club in town."
+          limit: 55 words
+        post_status:
+          type: string
+          description: The status of the location.
+          example: "publish"
+        post_thumbnail:
+          type: array
+          description: The thumbnail image of the location.
+          items:
+            id: integer
+            url: string
+            width: integer
+            height: integer
+            filesize: integer
+            alt: string
+            caption: string
+            description: string
+            focal_point: string
+        properties:
+          type: array
+          description: The properties of the location.
+          items:
+            key:
+              type: string
+              description: The key of the property for the location.
+              example: "status"
+            value:
+              type: string
+              description: The value of the property for the location.
+              example: "open"
+        marker:
+          type: object
+          description: The marker of the location.
+          properties:
+            color:
+              type: string
+              description: The color of the marker in HEX.
+              example: "#ff0000"
+            icon:
+              type: string
+              description: The URL for the icon of the marker.
+              example: "https://www.example.com/icon.svg"
+        bbox:
+          type: array
+          description: The bounding box of the location.
+          items:
+            type: number
+            format: float
+            example: [ 4.5, 52.5, 4.6, 52.6 ]
+            maxItems: 4
+        geometry:
+          type: object
+          description: The geometry of the location.
+          properties:
+            type:
+              type: string
+              description: The type of the geometry.
+              example: "Point"
+            projection:
+              type: string
+              description: The projection of the geometry.
+              example: "WGS84"
+              enum: [ "WGS84", "RD" ]
+            coordinates:
+              type: array
+              description: The coordinates of the geometry.
+              items:
+                type: number
+                format: float
+                example: [ 4.5, 52.5 ]
+                maxItems: 2
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+security:
+  - BasicAuth: []
