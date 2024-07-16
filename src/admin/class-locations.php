@@ -254,9 +254,13 @@ class Locations {
 		if ( ! empty( $markers ) && ! empty( $marker_field ) ) {
 			foreach ( $markers as $marker_data ) {
 				$location_marker_field = get_post_meta( $location_id, 'field_' . $marker_field, true );
-				if ( $location_marker_field === $marker_data['field_value'] ) {
-					$color = $marker_data['marker_color'];
-					$icon  = $marker_data['marker_icon'];
+				if ( isset( $marker_data['field_value'] ) && $location_marker_field === $marker_data['field_value'] ) {
+					if ( ! empty( $marker_data['marker_color'] ) ) {
+						$color = $marker_data['marker_color'];
+					}
+					if ( ! empty( $marker_data['marker_icon'] ) ) {
+						$icon = $marker_data['marker_icon'];
+					}
 				}
 			}
 		}
@@ -279,7 +283,7 @@ class Locations {
 			return null;
 		}
 
-		if ( 'local' === WP_ENVIRONMENT_TYPE ) {
+		if ( defined( 'WP_ENVIRONMENT_TYPE' ) && 'local' === \WP_ENVIRONMENT_TYPE ) {
 			return 'https://raw.githubusercontent.com/OpenGemeenten/Iconenset/64e1ee818d3339a54153d44d820381c804c24304/Regular/' . $icon . '.svg';
 		}
 
