@@ -581,6 +581,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$item_data       = json_decode( $geometry_json, true );
 		$item_data['id'] = $item->ID;
 
+		unset( $item_data['properties'] );
+
 		$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
 
 		// Get all cmb2 fields for the dataset post type.
@@ -588,13 +590,11 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		if ( ! empty( $source_fields ) ) {
 			foreach ( $source_fields as $source_field ) {
 				// Include only fields that are set to show.
-				$field_show = get_post_meta( $dataset_id, 'field_' . $source_field['field_label'] . '_show', true );
-				if ( ! $field_show ) {
-					unset( $item_data['properties'][ $source_field['field_label'] ] );
+				if ( ! isset( $source_field['field_show'] ) || 'on' !== $source_field['field_show'] ) {
 					continue;
 				}
 
-				$item_data['properties'][ $source_field['field_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
+				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
 			}
 		}
 

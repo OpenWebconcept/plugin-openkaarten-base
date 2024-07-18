@@ -9,6 +9,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use geoPHP\geoPHP;
+
 /**
  * Helper class for CMB2
  */
@@ -149,11 +151,13 @@ class Cmb2 {
 					continue;
 				}
 
-				$geometry_coords = $geometry_array['geometry']['coordinates'];
-				$min_lat         = ( null === $min_lat || $geometry_coords[1] < $min_lat ) ? $geometry_coords[1] : $min_lat;
-				$max_lat         = ( null === $max_lat || $geometry_coords[1] > $max_lat ) ? $geometry_coords[1] : $max_lat;
-				$min_long        = ( null === $min_long || $geometry_coords[0] < $min_long ) ? $geometry_coords[0] : $min_long;
-				$max_long        = ( null === $max_long || $geometry_coords[0] > $max_long ) ? $geometry_coords[0] : $max_long;
+				$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
+				$bbox = $geom->getBBox();
+
+				$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
+				$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
+				$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
+				$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
 
 				// Get average lat and long for the center of the map.
 				$center_lat  = ( $min_lat + $max_lat ) / 2;
@@ -163,8 +167,8 @@ class Cmb2 {
 				$location_marker = Locations::get_location_marker( $object_id, $location->ID );
 
 				$locations[] = [
-					'lat'     => $geometry_coords[1],
-					'long'    => $geometry_coords[0],
+					'lat'     => ( $bbox['miny'] + $bbox['maxy'] ) / 2,
+					'long'    => ( $bbox['minx'] + $bbox['maxx'] ) / 2,
 					'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
 					'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
 					'color'   => $location_marker['color'],

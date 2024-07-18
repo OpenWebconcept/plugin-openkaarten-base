@@ -9,6 +9,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use geoPHP\geoPHP;
+
 /**
  * Adds datalayers post type and support for mapping fieldlabels.
  */
@@ -425,7 +427,9 @@ class Datalayers {
 		}
 		$file = get_attached_file( $datalayer_file );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-		$json = file_get_contents( $file );
+		$data = file_get_contents( $file );
+		$geom = geoPHP::load( $data );
+		$json = $geom->out( 'json' );
 		$data = json_decode( $json, true );
 
 		if ( ! $data ) {
@@ -550,7 +554,9 @@ class Datalayers {
 
 		$file = get_attached_file( $datalayer_file );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-		$json = file_get_contents( $file );
+		$data = file_get_contents( $file );
+		$geom = geoPHP::load( $data );
+		$json = $geom->out( 'json' );
 		$data = json_decode( $json, true );
 
 		$source_fields = [];

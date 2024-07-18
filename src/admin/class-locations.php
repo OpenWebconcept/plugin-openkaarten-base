@@ -146,42 +146,50 @@ class Locations {
 			return;
 		}
 
-		$prefix = 'location_geometry_';
+		$geometry = get_post_meta( self::$object_id, 'geometry', true );
+		if ( ! empty( $geometry ) ) {
+			$geometry = json_decode( $geometry, true );
+		}
 
-		$cmb = new_cmb2_box(
-			[
-				'id'           => $prefix . 'metabox',
-				'title'        => __( 'Location geometry object', 'openkaarten-base' ),
-				'object_types' => [ 'owc_ok_location' ],
-				'context'      => 'normal',
-				'priority'     => 'low',
-				'show_names'   => true,
-				'cmb_styles'   => true,
-				'show_in_rest' => true,
-			]
-		);
+		if ( ! empty( $geometry ) && isset( $geometry['geometry']['type'] ) && 'POINT' === $geometry['geometry']['type'] ) {
+			// Only a point can be edited at this time.
+			$prefix = 'location_geometry_';
 
-		$cmb->add_field(
-			[
-				'name'         => 'Latitude',
-				'id'           => 'field_latitude',
-				'type'         => 'text',
-				'description'  => __( 'The latitude of the location.', 'openkaarten-base' ),
-				'show_in_rest' => true,
-				// translators: %s: link to latlong.net.
-				'before_row'   => sprintf( __( 'You can retrieve the latitude and longitude from an address via <a href="%s" target="_blank">this link</a>.', 'openkaarten-base' ), 'https://www.latlong.net/convert-address-to-lat-long.html' ),
-			]
-		);
+			$cmb = new_cmb2_box(
+				[
+					'id'           => $prefix . 'metabox',
+					'title'        => __( 'Location geometry object', 'openkaarten-base' ),
+					'object_types' => [ 'owc_ok_location' ],
+					'context'      => 'normal',
+					'priority'     => 'low',
+					'show_names'   => true,
+					'cmb_styles'   => true,
+					'show_in_rest' => true,
+				]
+			);
 
-		$cmb->add_field(
-			[
-				'name'         => 'Longitude',
-				'id'           => 'field_longitude',
-				'type'         => 'text',
-				'description'  => __( 'The longitude of the location.', 'openkaarten-base' ),
-				'show_in_rest' => true,
-			]
-		);
+			$cmb->add_field(
+				[
+					'name'         => 'Latitude',
+					'id'           => 'field_latitude',
+					'type'         => 'text',
+					'description'  => __( 'The latitude of the location.', 'openkaarten-base' ),
+					'show_in_rest' => true,
+					// translators: %s: link to latlong.net.
+					'before_row'   => sprintf( __( 'You can retrieve the latitude and longitude from an address via <a href="%s" target="_blank">this link</a>.', 'openkaarten-base' ), 'https://www.latlong.net/convert-address-to-lat-long.html' ),
+				]
+			);
+
+			$cmb->add_field(
+				[
+					'name'         => 'Longitude',
+					'id'           => 'field_longitude',
+					'type'         => 'text',
+					'description'  => __( 'The longitude of the location.', 'openkaarten-base' ),
+					'show_in_rest' => true,
+				]
+			);
+		}
 
 		$prefix = 'location_fixed_';
 
