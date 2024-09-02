@@ -70,6 +70,8 @@ class Conversion {
 	 * @param float $x The x coordinate.
 	 * @param float $y The y coordinate.
 	 *
+	 * @source https://github.com/mmmenno/rd2wgs/blob/master/rd2wgs.php
+	 *
 	 * @return array The WGS84 coordinates.
 	 */
 	private static function rd2wgs( $x, $y ) {
@@ -119,6 +121,8 @@ class Conversion {
 	 *
 	 * @param float $lat The latitude coordinate.
 	 * @param float $lon The longitude coordinate.
+	 *
+	 * @source https://github.com/mmmenno/rd2wgs/blob/master/wgs2rd.php
 	 *
 	 * @return array The RD coordinates.
 	 */
