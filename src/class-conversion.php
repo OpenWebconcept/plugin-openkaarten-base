@@ -8,12 +8,6 @@
 
 namespace Openkaarten_Base_Plugin;
 
-use PHPCoord\CoordinateReferenceSystem\Projected;
-use PHPCoord\Point\GeographicPoint;
-use PHPCoord\Point\ProjectedPoint;
-use PHPCoord\UnitOfMeasure\Angle\Degree;
-use PHPCoord\UnitOfMeasure\Length\Metre;
-
 /**
  * Helper class to convert a geometry to a specific projection.
  *
