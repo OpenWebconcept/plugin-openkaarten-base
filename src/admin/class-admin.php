@@ -185,10 +185,10 @@ class Admin {
 	public static function check_plugin_dependency() {
 		if (
 			! is_plugin_active( 'cmb2/init.php' )
-			&& is_plugin_active( 'openkaarten-base/openkaarten-base.php' )
+			&& is_plugin_active( 'plugin-openkaarten-base/openkaarten-base.php' )
 		) {
 			set_transient( 'owc_ok_transient', __( 'The plugin OpenKaarten Base requires CMB2 plugin to be installed and activated. The plugin has been deactivated.', 'openkaarten-base' ), 100 );
-			deactivate_plugins( 'openkaarten-base/openkaarten-base.php' );
+			deactivate_plugins( 'plugin-openkaarten-base/openkaarten-base.php' );
 		} else {
 			delete_transient( 'owc_ok_transient' );
 		}
