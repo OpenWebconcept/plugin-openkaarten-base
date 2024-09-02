@@ -22,9 +22,7 @@
     ],
     "require" : {
         "composer/installers" : "~1.0",
-        "richardkorthuis/geophp": "dev-development",
-        "php-coord/php-coord": "^5.8",
-        "php-coord/datapack-europe": "^1.7"
+        "richardkorthuis/geophp": "dev-development"
     },
     "require-dev" : {
         "acato/wp-pre-commit-hook": "*",
