@@ -9,6 +9,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use Exception;
+use geoPHP\Adapter\GeoJSON;
 use geoPHP\geoPHP;
 use Openkaarten_Base_Plugin\Conversion;
 
@@ -85,11 +87,7 @@ class Importer {
 			return;
 		}
 
-		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
-
-		if ( 'fileinput' === $datalayer_type ) {
-			self::import_geo_file( $post_id, $meta_key, $meta_value );
-		}
+		self::import_geo_file( $post_id, $meta_key, $meta_value );
 	}
 
 	/**
@@ -114,6 +112,8 @@ class Importer {
 		if ( empty( $_POST['source_fields'] ) ) {
 			return;
 		}
+
+		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- We need to read the source fields.
 		$source_fields          = wp_unslash( $_POST['source_fields'] );
@@ -161,10 +161,33 @@ class Importer {
 	 * @return void
 	 */
 	public static function import_locations( $post_id, $meta_value = false ) {
-		$file = get_attached_file( get_post_meta( $post_id, 'datalayer_file_id', true ) );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
-		$data       = file_get_contents( $file );
-		$geom       = geoPHP::load( $data );
+		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
+
+		switch ( $datalayer_type ) {
+			case 'fileinput':
+			default:
+				$file = get_attached_file( get_post_meta( $post_id, 'datalayer_file_id', true ) );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
+				$data = file_get_contents( $file );
+				break;
+			case 'url':
+				$data = Datalayers::fetch_datalayer_url_data( $post_id );
+
+				// Convert data to GeoJSON.
+				$data = Helper::array_to_geojson( $data );
+				break;
+		}
+
+		// Check if data is valid GeoJSON and if we can parse it.
+		try {
+			$geom = geoPHP::load( $data );
+		} catch ( Exception $e ) {
+			// Add error message via transient.
+			set_transient( 'owc_ok_transient', __( 'The GeoJSON file is not valid.', 'openkaarten-base' ), 100 );
+
+			return;
+		}
+
 		$components = $geom->getComponents();
 
 		// Catch all the fields in brackets from the title fields and replace them with the actual values.
@@ -194,6 +217,9 @@ class Importer {
 
 				$title = $title_fields;
 				foreach ( $properties as $key => $value ) {
+					if ( is_array( $value ) || is_object( $value ) ) {
+						continue;
+					}
 					$value = is_null( $value ) ? '' : $value;
 					$title = str_replace( '{' . $key . '}', $value, $title );
 				}

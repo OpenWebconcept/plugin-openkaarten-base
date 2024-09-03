@@ -194,13 +194,16 @@ class Datalayers {
 
 		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
 
-		$source_fields = self::cmb2_get_source_fields( $cmb->object_id() );
-		$source_fields = array_map(
-			function ( $field ) {
-				return '{' . $field . '}';
-			},
-			$source_fields
-		);
+		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
+
+		if ( ! empty( $source_fields ) ) {
+			$source_fields = array_map(
+				function ( $field ) {
+					return '{' . $field . '}';
+				},
+				$source_fields
+			);
+		}
 
 		$cmb = new_cmb2_box(
 			[
@@ -511,6 +514,7 @@ class Datalayers {
 			return $value;
 		}
 		$data = get_post_meta( $object_id, 'source_fields', true );
+
 		if ( $data ) {
 			return $value;
 		}
@@ -534,17 +538,18 @@ class Datalayers {
 				$data_array = $data['features'][0]['properties'];
 				break;
 			case 'url':
-				$url_data = self::fetch_datalayer_url_data( $object_id );
+				$url_data = self::fetch_datalayer_url_data( $object_id, true );
 
 				if ( empty( $url_data ) ) {
 					return $value;
 				}
 
-				$data_array = $url_data['features'][0]['properties'];
+				$data_array = $url_data;
 				break;
 		}
 
 		$repeater = [];
+
 		foreach ( $data_array as $key => $val ) {
 			$display_label = $key;
 
@@ -652,10 +657,11 @@ class Datalayers {
 	 * Fetch the data from an external source URL.
 	 *
 	 * @param int|string $object_id The object ID.
+	 * @param bool       $single Whether to return a single result.
 	 *
 	 * @return array
 	 */
-	public static function fetch_datalayer_url_data( $object_id ) {
+	public static function fetch_datalayer_url_data( $object_id, $single = false ) {
 		if ( self::$datalayer_url_data ) {
 			return self::$datalayer_url_data;
 		}
@@ -672,6 +678,15 @@ class Datalayers {
 
 		if ( empty( $data ) ) {
 			return [];
+		}
+
+		// Check if the data is an array with a data key and if so, use that data.
+		if ( isset( $data['data'] ) && is_array( $data['data'] ) ) {
+			$data = $data['data'];
+		}
+
+		if ( $single ) {
+			$data = reset( $data );
 		}
 
 		self::$datalayer_url_data = $data;
@@ -692,11 +707,11 @@ class Datalayers {
 			$source_fields = self::cmb2_get_source_fields( $object_id );
 		} elseif ( 'url' === self::$datalayer_type ) {
 			// Retrieve content from URL and get the source fields.
-			$url_data = self::fetch_datalayer_url_data( $object_id );
+			$url_data = self::fetch_datalayer_url_data( $object_id, true );
 
 			$source_fields = [];
-			if ( $url_data && isset( $url_data['features'] ) && isset( $url_data['features'][0]['properties'] ) ) {
-				foreach ( $url_data['features'][0]['properties'] as $key => $val ) {
+			if ( ! empty( $url_data ) ) {
+				foreach ( $url_data as $key => $val ) {
 					$source_fields[] = $key;
 				}
 			}

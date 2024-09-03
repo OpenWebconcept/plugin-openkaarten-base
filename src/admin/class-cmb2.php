@@ -112,7 +112,7 @@ class Cmb2 {
 
 		switch ( $datalayer_type ) {
 			case 'fileinput':
-			case 'post_type':
+			case 'url':
 			default:
 				$meta_query = [
 					'relation' => 'AND',
@@ -122,23 +122,17 @@ class Cmb2 {
 					],
 				];
 
-				// Get the post type if the datalayer has type Post Type.
-				$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
-				if ( 'post_type' === $datalayer_type ) {
-					$openkaarten_post_types = get_post_meta( $object_id, 'datalayer_post_type', true );
-				} else {
-					$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
-					$meta_query             = array_merge(
-						$meta_query,
+				$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
+				$meta_query             = array_merge(
+					$meta_query,
+					[
 						[
-							[
-								'key'     => 'location_datalayer_id',
-								'value'   => $object_id,
-								'compare' => '=',
-							],
-						]
-					);
-				}
+							'key'     => 'location_datalayer_id',
+							'value'   => $object_id,
+							'compare' => '=',
+						],
+					]
+				);
 
 				$args = wp_parse_args(
 					[
@@ -152,13 +146,6 @@ class Cmb2 {
 				);
 
 				$datalayer_locations = get_posts( $args );
-				break;
-			case 'url':
-				$datalayer_locations = Datalayers::get_datalayer_url_data( $object_id );
-
-				if ( ! empty( $datalayer_locations ) ) {
-					$datalayer_locations = $datalayer_locations['features'];
-				}
 				break;
 		}
 

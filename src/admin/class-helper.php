@@ -187,4 +187,51 @@ class Helper {
 				&& ( $timestamp <= PHP_INT_MAX )
 				&& ( $timestamp >= ~PHP_INT_MAX );
 	}
+
+	/**
+	 * Convert an array to GeoJSON.
+	 *
+	 * @param array $array The array to convert.
+	 *
+	 * @return string The GeoJSON.
+	 */
+	public static function array_to_geojson( $array ) {
+		$geojson = [
+			'type'     => 'FeatureCollection',
+			'features' => [],
+		];
+
+		foreach ( $array as $array_item_values ) {
+			$array_item_values['geometry'] = [
+				'type'        => 'Point',
+				'coordinates' => [
+					5.6484,
+					53.0424,
+				],
+			];
+
+			$feature = [
+				'type' => 'Feature',
+			];
+
+			if ( isset( $array_item_values['id'] ) ) {
+				$feature['id'] = $array_item_values['id'];
+				unset( $array_item_values['id'] );
+			}
+
+			if ( isset( $array_item_values['geometry'] ) ) {
+				$feature['geometry']      = $array_item_values['geometry'];
+				$feature['geometry_name'] = 'geom';
+				unset( $array_item_values['geometry'] );
+			}
+
+			foreach ( $array_item_values as $key => $value ) {
+				$feature['properties'][ $key ] = $value;
+			}
+
+			$geojson['features'][] = $feature;
+		}
+
+		return json_encode( $geojson );
+	}
 }
