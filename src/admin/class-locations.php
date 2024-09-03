@@ -112,13 +112,11 @@ class Locations {
 	public static function cmb2_location_datalayer_field() {
 		$prefix = 'location_datalayer_';
 
-		$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
-
 		$cmb = new_cmb2_box(
 			[
 				'id'           => $prefix . 'metabox',
 				'title'        => __( 'Location datalayer', 'openkaarten-base' ),
-				'object_types' => $openkaarten_post_types,
+				'object_types' => [ 'owc_ok_location' ],
 				'context'      => 'normal',
 				'priority'     => 'low',
 				'show_names'   => true,
