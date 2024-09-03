@@ -209,6 +209,9 @@ class Cmb2 {
 				'maxLong'      => esc_attr( $max_long ),
 				'centerLat'    => esc_attr( $center_lat ),
 				'centerLong'   => esc_attr( $center_long ),
+				'defaultZoom'  => 10,
+				'fitBounds'    => true,
+				'allowClick'   => false,
 			]
 		);
 

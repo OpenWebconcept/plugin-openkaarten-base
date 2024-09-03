@@ -232,7 +232,7 @@ class Importer {
 				update_post_meta( $location_id, 'location_datalayer_id', $post_id );
 
 				foreach ( $properties as $key => $value ) {
-					// Save true and false as text.
+					// Save true and false as text, so you can use it in customizing the markers.
 					if ( is_bool( $value ) ) {
 						$value = $value ? 'true' : 'false';
 					}
