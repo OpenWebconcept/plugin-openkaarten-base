@@ -217,6 +217,12 @@ class Locations {
 		);
 
 		foreach ( $source_fields as $field ) {
+			// Check if the value for this specific field for this specific location is an object or an array.
+			$location_field_value = get_post_meta( self::$object_id, 'field_' . $field['field_label'], true );
+			if ( is_array( $location_field_value ) || is_object( $location_field_value ) ) {
+				continue;
+			}
+
 			$required = $field['field_required'] ?? false;
 
 			$field['attributes'] = [];

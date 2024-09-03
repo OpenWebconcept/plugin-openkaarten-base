@@ -216,7 +216,6 @@ class Helper {
 
 			if ( isset( $array_item_values['id'] ) ) {
 				$feature['id'] = $array_item_values['id'];
-				unset( $array_item_values['id'] );
 			}
 
 			if ( isset( $array_item_values['geometry'] ) ) {
