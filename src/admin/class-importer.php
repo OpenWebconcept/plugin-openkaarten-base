@@ -232,6 +232,11 @@ class Importer {
 				update_post_meta( $location_id, 'location_datalayer_id', $post_id );
 
 				foreach ( $properties as $key => $value ) {
+					// Save true and false as text.
+					if ( is_bool( $value ) ) {
+						$value = $value ? 'true' : 'false';
+					}
+
 					update_post_meta( $location_id, 'field_' . $key, $value );
 				}
 
