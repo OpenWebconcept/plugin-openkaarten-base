@@ -202,14 +202,6 @@ class Helper {
 		];
 
 		foreach ( $array as $array_item_values ) {
-			$array_item_values['geometry'] = [
-				'type'        => 'Point',
-				'coordinates' => [
-					5.6484,
-					53.0424,
-				],
-			];
-
 			$feature = [
 				'type' => 'Feature',
 			];

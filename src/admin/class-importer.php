@@ -113,8 +113,6 @@ class Importer {
 			return;
 		}
 
-		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
-
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- We need to read the source fields.
 		$source_fields          = wp_unslash( $_POST['source_fields'] );
 		$original_source_fields = get_post_meta( $post_id, 'source_fields', true ) ?: [];
