@@ -174,4 +174,17 @@ class Helper {
 
 		return strtolower( $alpha[ $opacity ] . $b . $g . $r );
 	}
+
+	/**
+	 * Check if a string is a valid timestamp.
+	 *
+	 * @param string $timestamp The timestamp to check.
+	 *
+	 * @return bool True if the timestamp is valid, false otherwise.
+	 */
+	public static function is_valid_timestamp( $timestamp ) {
+		return ( (string) (int) $timestamp === $timestamp )
+				&& ( $timestamp <= PHP_INT_MAX )
+				&& ( $timestamp >= ~PHP_INT_MAX );
+	}
 }

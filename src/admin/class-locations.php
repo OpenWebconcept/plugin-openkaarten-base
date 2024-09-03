@@ -58,6 +58,7 @@ class Locations {
 		add_action( 'cmb2_init', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'action_cmb2_init' ] );
 		add_filter( 'cmb2_override_field_latitude_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'prefill_geometry_object' ], 10, 4 );
 		add_filter( 'cmb2_override_field_longitude_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'prefill_geometry_object' ], 10, 4 );
+		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_address_object' ], 15, 1 );
 		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_geometry_object' ], 10, 1 );
 	}
 
@@ -80,7 +81,14 @@ class Locations {
 			$post_id = sanitize_text_field( wp_unslash( $_POST['post_ID'] ) );
 		}
 
+		// Get post type.
+		$post_type = get_post_type( $post_id );
+
 		self::cmb2_location_datalayer_field();
+
+		if ( 'owc_ok_location' !== $post_type ) {
+			return;
+		}
 
 		if ( empty( $post_id ) ) {
 			return;
@@ -104,11 +112,13 @@ class Locations {
 	public static function cmb2_location_datalayer_field() {
 		$prefix = 'location_datalayer_';
 
+		$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
+
 		$cmb = new_cmb2_box(
 			[
 				'id'           => $prefix . 'metabox',
 				'title'        => __( 'Location datalayer', 'openkaarten-base' ),
-				'object_types' => [ 'owc_ok_location' ],
+				'object_types' => $openkaarten_post_types,
 				'context'      => 'normal',
 				'priority'     => 'low',
 				'show_names'   => true,
@@ -246,12 +256,13 @@ class Locations {
 	/**
 	 * Get the location marker for the location.
 	 *
-	 * @param int $datalayer_id The datalayer ID.
-	 * @param int $location_id The location ID.
+	 * @param int   $datalayer_id The datalayer ID.
+	 * @param int   $location_id The location ID.
+	 * @param array $location_data The location data.
 	 *
 	 * @return array The color and icon of the marker.
 	 */
-	public static function get_location_marker( $datalayer_id, $location_id ) {
+	public static function get_location_marker( $datalayer_id, $location_id = false, $location_data = false ) {
 		$marker_field = get_post_meta( $datalayer_id, 'marker_field', true );
 		$markers      = get_post_meta( $datalayer_id, 'markers', true );
 
@@ -261,7 +272,17 @@ class Locations {
 		// Check marker customization and set correct marker icon and color.
 		if ( ! empty( $markers ) && ! empty( $marker_field ) ) {
 			foreach ( $markers as $marker_data ) {
-				$location_marker_field = get_post_meta( $location_id, 'field_' . $marker_field, true );
+				if ( ! $location_id ) {
+					$location_marker_field = $location_data['properties'][ $marker_field ];
+				} else {
+					$prefix = '';
+					if ( 'owc_ok_location' === get_post_type( $location_id ) ) {
+						$prefix = 'field_';
+					}
+
+					$location_marker_field = get_post_meta( $location_id, $prefix . $marker_field, true );
+				}
+
 				if ( isset( $marker_data['field_value'] ) && $location_marker_field === $marker_data['field_value'] ) {
 					if ( ! empty( $marker_data['marker_color'] ) ) {
 						$color = $marker_data['marker_color'];
@@ -328,6 +349,61 @@ class Locations {
 			}
 			if ( 'field_longitude' === $field->args['id'] && isset( $geometry_object['geometry']['coordinates'][0] ) ) {
 				return $geometry_object['geometry']['coordinates'][0];
+			}
+		}
+	}
+
+	/**
+	 * Save the address object.
+	 *
+	 * @param int $post_id The post ID.
+	 *
+	 * @return void
+	 */
+	public static function save_address_object( $post_id ) {
+		// Check nonce.
+		// phpcs:ignore WordPress.Security.NonceVerification -- Disable nonce for now, because not working with Gutenberg.
+		// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedIf -- Disable nonce for now, because not working with Gutenberg.
+		if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
+			// return;.
+		}
+
+		// Retrieve the latitude and longitude by address.
+		if ( isset( $_POST['field_geo_address'] ) ) {
+			$address = sanitize_text_field( wp_unslash( $_POST['field_geo_address'] ) );
+			update_post_meta( $post_id, 'field_geo_address', wp_slash( $address ) );
+
+			if ( isset( $_POST['field_geo_zipcode'] ) ) {
+				$zipcode  = sanitize_text_field( wp_unslash( $_POST['field_geo_zipcode'] ) );
+				$address .= ' ' . $zipcode;
+				update_post_meta( $post_id, 'field_geo_zipcode', wp_slash( $zipcode ) );
+			}
+			if ( isset( $_POST['field_geo_city'] ) ) {
+				$city     = sanitize_text_field( wp_unslash( $_POST['field_geo_city'] ) );
+				$address .= ' ' . $city;
+				update_post_meta( $post_id, 'field_geo_city', wp_slash( $city ) );
+			}
+			if ( isset( $_POST['field_geo_country'] ) ) {
+				$country  = sanitize_text_field( wp_unslash( $_POST['field_geo_country'] ) );
+				$address .= ' ' . $country;
+				update_post_meta( $post_id, 'field_geo_country', wp_slash( $country ) );
+			}
+
+			// Get the latitude and longitude from the database. If they are already set, return.
+			$lat  = get_post_meta( $post_id, 'field_geo_latitude', true );
+			$long = get_post_meta( $post_id, 'field_geo_longitude', true );
+
+			if ( ! empty( $lat ) && ! empty( $long ) ) {
+				return;
+			}
+
+			$lat_long = self::convert_address_to_latlong( sanitize_text_field( wp_unslash( $address ) ) );
+			if ( ! empty( $lat_long['latitude'] ) && ! empty( $lat_long['longitude'] ) ) {
+				$latitude  = sanitize_text_field( wp_unslash( $lat_long['latitude'] ) );
+				$longitude = sanitize_text_field( wp_unslash( $lat_long['longitude'] ) );
+
+				update_post_meta( $post_id, 'field_geo_latitude', wp_slash( $latitude ) );
+				update_post_meta( $post_id, 'field_geo_longitude', wp_slash( $longitude ) );
 			}
 		}
 	}
@@ -401,5 +477,71 @@ class Locations {
 		} else {
 			add_post_meta( $post_id, 'geometry', wp_slash( $component ), true );
 		}
+	}
+
+	/**
+	 * Get latitude and longitude from an address with OpenStreetMap.
+	 *
+	 * @param string $address The address.
+	 *
+	 * @return array|null
+	 */
+	public static function convert_address_to_latlong( $address ) {
+
+		if ( ! $address ) {
+			return null;
+		}
+
+		$address     = str_replace( ' ', '+', $address );
+		$osm_url     = 'https://nominatim.openstreetmap.org/search?q=' . $address . '&format=json&addressdetails=1';
+		$osm_address = wp_remote_get( $osm_url );
+
+		if ( ! $osm_address ) {
+			return null;
+		}
+
+		$osm_address = json_decode( $osm_address['body'] );
+
+		if ( ! $osm_address[0]->lat || ! $osm_address[0]->lon ) {
+			return null;
+		}
+
+		$latitude  = $osm_address[0]->lat;
+		$longitude = $osm_address[0]->lon;
+
+		return [
+			'latitude'  => $latitude,
+			'longitude' => $longitude,
+		];
+	}
+
+	/**
+	 * Output the address of the location.
+	 *
+	 * @param int $location_id The location ID.
+	 *
+	 * @return string
+	 */
+	public static function output_address( $location_id ) {
+		$address = get_post_meta( $location_id, 'field_geo_address', true );
+		$zipcode = get_post_meta( $location_id, 'field_geo_zipcode', true );
+		$city    = get_post_meta( $location_id, 'field_geo_city', true );
+		$country = get_post_meta( $location_id, 'field_geo_country', true );
+
+		$output = '';
+		if ( ! empty( $address ) ) {
+			$output .= $address . '<br>';
+		}
+		if ( ! empty( $zipcode ) ) {
+			$output .= $zipcode . ' ';
+		}
+		if ( ! empty( $city ) ) {
+			$output .= $city . '<br>';
+		}
+		if ( ! empty( $country ) ) {
+			$output .= $country;
+		}
+
+		return $output;
 	}
 }

@@ -85,7 +85,11 @@ class Importer {
 			return;
 		}
 
-		self::import_geo_file( $post_id, $meta_key, $meta_value );
+		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
+
+		if ( 'fileinput' === $datalayer_type ) {
+			self::import_geo_file( $post_id, $meta_key, $meta_value );
+		}
 	}
 
 	/**
@@ -209,6 +213,18 @@ class Importer {
 
 				$geometry = self::process_geometry( $component );
 				update_post_meta( $location_id, 'geometry', wp_slash( $geometry ) );
+
+				// Retrieve address with geometry lat/lon.
+				$geometry_array = json_decode( $geometry, true );
+				$latitude       = $geometry_array['geometry']['coordinates'][1];
+				$longitude      = $geometry_array['geometry']['coordinates'][0];
+
+				if ( empty( $latitude ) || empty( $longitude ) ) {
+					continue;
+				}
+
+				update_post_meta( $location_id, 'field_geo_latitude', wp_slash( $latitude ) );
+				update_post_meta( $location_id, 'field_geo_longitude', wp_slash( $longitude ) );
 			}
 		}
 	}

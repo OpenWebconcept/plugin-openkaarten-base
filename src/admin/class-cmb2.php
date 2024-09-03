@@ -107,25 +107,60 @@ class Cmb2 {
 	 * @return string The field type HTML.
 	 */
 	public static function cmb2_render_openstreetmap_field_type( $field, $escaped_value, $object_id ) {
-		$args = wp_parse_args(
-			[
-				'post_type'   => 'owc_ok_location',
-				'numberposts' => -1,
-				'orderby'     => 'title',
-				'order'       => 'ASC',
-				// phpcs:ignore WordPress.DB.SlowDBQuery -- This query is needed to get the locations.
-				'meta_query'  => [
-					'relation' => 'OR',
-					[
-						'key'     => 'location_datalayer_id',
-						'value'   => $object_id,
-						'compare' => '=',
-					],
-				],
-			]
-		);
 
-		$datalayer_locations = get_posts( $args );
+		$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
+
+		switch ( $datalayer_type ) {
+			case 'fileinput':
+			case 'post_type':
+			default:
+				$meta_query = [
+					'relation' => 'AND',
+					[
+						'key'     => 'geometry',
+						'compare' => 'EXISTS',
+					],
+				];
+
+				// Get the post type if the datalayer has type Post Type.
+				$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
+				if ( 'post_type' === $datalayer_type ) {
+					$openkaarten_post_types = get_post_meta( $object_id, 'datalayer_post_type', true );
+				} else {
+					$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
+					$meta_query             = array_merge(
+						$meta_query,
+						[
+							[
+								'key'     => 'location_datalayer_id',
+								'value'   => $object_id,
+								'compare' => '=',
+							],
+						]
+					);
+				}
+
+				$args = wp_parse_args(
+					[
+						'post_type'   => $openkaarten_post_types,
+						'numberposts' => -1,
+						'orderby'     => 'title',
+						'order'       => 'ASC',
+						// phpcs:ignore WordPress.DB.SlowDBQuery -- This query is needed to get the locations.
+						'meta_query'  => $meta_query,
+					]
+				);
+
+				$datalayer_locations = get_posts( $args );
+				break;
+			case 'url':
+				$datalayer_locations = Datalayers::get_datalayer_url_data( $object_id );
+
+				if ( ! empty( $datalayer_locations ) ) {
+					$datalayer_locations = $datalayer_locations['features'];
+				}
+				break;
+		}
 
 		if ( ! $datalayer_locations ) {
 			echo esc_html__( 'No locations found for this datalayer.', 'openkaarten-base' );
