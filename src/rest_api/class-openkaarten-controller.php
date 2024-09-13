@@ -578,8 +578,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			return false;
 		}
 
-		$item_data       = json_decode( $geometry_json, true );
-		$item_data['id'] = $item->ID;
+		$item_data          = json_decode( $geometry_json, true );
+		$item_data['id']    = $item->ID;
 		$item_data['title'] = get_the_title($item->ID);
 
 		unset( $item_data['properties'] );
