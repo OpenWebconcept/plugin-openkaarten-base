@@ -9,6 +9,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use Openkaarten_Base_Functions\Openkaarten_Base_Functions;
+
 /**
  * Adds location post type and support for mapping fieldlabels.
  */
@@ -58,8 +60,7 @@ class Locations {
 		add_action( 'cmb2_init', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'action_cmb2_init' ] );
 		add_filter( 'cmb2_override_field_latitude_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'prefill_geometry_object' ], 10, 4 );
 		add_filter( 'cmb2_override_field_longitude_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'prefill_geometry_object' ], 10, 4 );
-		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_address_object' ], 15, 1 );
-		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_geometry_object' ], 10, 1 );
+		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_geometry_object' ], 20, 1 );
 	}
 
 	/**
@@ -102,6 +103,8 @@ class Locations {
 		}
 
 		self::cmb2_location_fixed_fields();
+
+		Openkaarten_Base_Functions::cmb2_location_geometry_fields( $post_id, [ 'owc_ok_location' ] );
 	}
 
 	/**
@@ -358,61 +361,6 @@ class Locations {
 	}
 
 	/**
-	 * Save the address object.
-	 *
-	 * @param int $post_id The post ID.
-	 *
-	 * @return void
-	 */
-	public static function save_address_object( $post_id ) {
-		// Check nonce.
-		// phpcs:ignore WordPress.Security.NonceVerification -- Disable nonce for now, because not working with Gutenberg.
-		// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedIf -- Disable nonce for now, because not working with Gutenberg.
-		if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
-			// return;.
-		}
-
-		// Retrieve the latitude and longitude by address.
-		if ( isset( $_POST['field_geo_address'] ) ) {
-			$address = sanitize_text_field( wp_unslash( $_POST['field_geo_address'] ) );
-			update_post_meta( $post_id, 'field_geo_address', wp_slash( $address ) );
-
-			if ( isset( $_POST['field_geo_zipcode'] ) ) {
-				$zipcode  = sanitize_text_field( wp_unslash( $_POST['field_geo_zipcode'] ) );
-				$address .= ' ' . $zipcode;
-				update_post_meta( $post_id, 'field_geo_zipcode', wp_slash( $zipcode ) );
-			}
-			if ( isset( $_POST['field_geo_city'] ) ) {
-				$city     = sanitize_text_field( wp_unslash( $_POST['field_geo_city'] ) );
-				$address .= ' ' . $city;
-				update_post_meta( $post_id, 'field_geo_city', wp_slash( $city ) );
-			}
-			if ( isset( $_POST['field_geo_country'] ) ) {
-				$country  = sanitize_text_field( wp_unslash( $_POST['field_geo_country'] ) );
-				$address .= ' ' . $country;
-				update_post_meta( $post_id, 'field_geo_country', wp_slash( $country ) );
-			}
-
-			// Get the latitude and longitude from the database. If they are already set, return.
-			$lat  = get_post_meta( $post_id, 'field_geo_latitude', true );
-			$long = get_post_meta( $post_id, 'field_geo_longitude', true );
-
-			if ( ! empty( $lat ) && ! empty( $long ) ) {
-				return;
-			}
-
-			$lat_long = self::convert_address_to_latlong( sanitize_text_field( wp_unslash( $address ) ) );
-			if ( ! empty( $lat_long['latitude'] ) && ! empty( $lat_long['longitude'] ) ) {
-				$latitude  = sanitize_text_field( wp_unslash( $lat_long['latitude'] ) );
-				$longitude = sanitize_text_field( wp_unslash( $lat_long['longitude'] ) );
-
-				update_post_meta( $post_id, 'field_geo_latitude', wp_slash( $latitude ) );
-				update_post_meta( $post_id, 'field_geo_longitude', wp_slash( $longitude ) );
-			}
-		}
-	}
-
-	/**
 	 * Save the location geometry object.
 	 *
 	 * @param int $post_id The post ID.
@@ -420,29 +368,8 @@ class Locations {
 	 * @return void
 	 */
 	public static function save_geometry_object( $post_id ) {
-		if ( wp_is_post_autosave( $post_id ) ) {
-			return;
-		}
-
 		// Check nonce.
-		if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
-			return;
-		}
-
-		if ( doing_action( 'save_post_event' ) ) {
-			// We cannot do this now. The post we are trying to update doesn't exist yet.
-			add_action(
-				'shutdown',
-				function () use ( $post_id ) {
-					// Do the save-actions.
-					$this->save_handler( $post_id );
-					// And clear the wp-rest-cache.
-					if ( class_exists( \Caching::class ) ) {
-						\Caching::get_instance()->delete_cache_by_endpoint( '%/openkaarten/v1/datasets', \Caching::FLUSH_LOOSE, true );
-					}
-				}
-			);
-
+		if ( ! isset( $_POST['nonce_CMB2phplocation_geometry_metabox'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce_CMB2phplocation_geometry_metabox'] ) ), 'nonce_CMB2phplocation_geometry_metabox' ) ) {
 			return;
 		}
 
@@ -457,30 +384,8 @@ class Locations {
 			}
 		}
 
-		// Make the geometry object.
-		$geometry = [];
-		if ( isset( $_POST['field_latitude'] ) && isset( $_POST['field_longitude'] ) ) {
-			$latitude  = sanitize_text_field( wp_unslash( $_POST['field_latitude'] ) );
-			$longitude = sanitize_text_field( wp_unslash( $_POST['field_longitude'] ) );
-			$geometry  = [
-				'type'        => 'Point',
-				'coordinates' => [ (float) $longitude, (float) $latitude ],
-			];
-		}
-
-		$component = [
-			'type'       => 'Feature',
-			'properties' => $properties,
-			'geometry'   => $geometry,
-		];
-		$component = wp_json_encode( $component );
-
-		// Check if post meta exists and update or add the post meta.
-		if ( metadata_exists( 'post', $post_id, 'geometry' ) ) {
-			update_post_meta( $post_id, 'geometry', wp_slash( $component ) );
-		} else {
-			add_post_meta( $post_id, 'geometry', wp_slash( $component ), true );
-		}
+		// Execute the save_geometry_object function from the Openkaarten_Base_Functions class.
+		\Openkaarten_Base_Functions\Openkaarten_Base_Functions::save_geometry_object( $post_id, $properties );
 	}
 
 	/**

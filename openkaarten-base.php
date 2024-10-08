@@ -37,6 +37,14 @@ if ( ! defined( 'OWC_OPENKAARTEN_BASE_ASSETS_URL' ) ) {
 	define( 'OWC_OPENKAARTEN_BASE_ASSETS_URL', esc_url( trailingslashit( plugins_url( '', __FILE__ ) ) . 'build' ) );
 }
 
+// Load Composer autoloader if available.
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
+// Initialize the OpenKaarten Base Functions class.
+Openkaarten_Base_Functions\Openkaarten_Base_Functions::init();
+
 require_once plugin_dir_path( __FILE__ ) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'class-autoloader.php';
 spl_autoload_register( [ '\Openkaarten_Base_Plugin\Autoloader', 'autoload' ] );
 /**
