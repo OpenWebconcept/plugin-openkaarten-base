@@ -122,7 +122,6 @@ class Cmb2 {
 					],
 				];
 
-				$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
 				$meta_query             = array_merge(
 					$meta_query,
 					[
@@ -136,7 +135,7 @@ class Cmb2 {
 
 				$args = wp_parse_args(
 					[
-						'post_type'   => $openkaarten_post_types,
+						'post_type'   => 'owc_ok_location',
 						'numberposts' => -1,
 						'orderby'     => 'title',
 						'order'       => 'ASC',

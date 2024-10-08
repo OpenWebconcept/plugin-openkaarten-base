@@ -52,24 +52,6 @@ class Datalayers {
 	}
 
 	/**
-	 * Get the datalayer type.
-	 *
-	 * @return string The datalayer type.
-	 */
-	public static function get_datalayer_type() {
-		return self::$datalayer_type;
-	}
-
-	/**
-	 * Get the datalayer URL data.
-	 *
-	 * @return array The datalayer URL data.
-	 */
-	public static function get_datalayer_url_data() {
-		return self::$datalayer_url_data;
-	}
-
-	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @return void

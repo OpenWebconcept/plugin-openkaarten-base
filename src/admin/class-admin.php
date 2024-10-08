@@ -114,11 +114,7 @@ class Admin {
 		// Only include the script on the kaarten edit pages.
 		$screen = get_current_screen();
 
-		// Get extra post types to use OpenKaarten from the settings.
-		$openkaarten_post_types = apply_filters( 'openkaarten_base_post_types', [ 'owc_ok_location' ] );
-		$openkaarten_post_types = array_merge( [ 'owc_ok_datalayer' ], $openkaarten_post_types );
-
-		if ( ! in_array( $screen->id, $openkaarten_post_types, true ) ) {
+		if ( ! in_array( $screen->id, [ 'owc_ok_datalayer', 'owc_ok_location' ], true ) ) {
 			return;
 		}
 
