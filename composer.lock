@@ -272,7 +272,14 @@
             "source": {
                 "type": "git",
                 "url": "git@bitbucket.org:acato/openkaarten-base-functions.git",
-                "reference": "b37c50a1b6f612845af79556fd00e71332e36fed"
+                "reference": "1dbb345e25e1ce514aca9e95c17efbb490969bdb"
+            },
+            "require": {
+                "composer/installers": "~1.0"
+            },
+            "require-dev": {
+                "acato/wp-pre-commit-hook": "*",
+                "phpcompatibility/phpcompatibility-wp": "*"
             },
             "default-branch": true,
             "type": "library",
@@ -292,7 +299,7 @@
             ],
             "description": "Adds global functions for OpenKaarten Base and OpenKaarten add-on plugins.",
             "homepage": "https://www.acato.nl",
-            "time": "2024-10-08T14:04:05+00:00"
+            "time": "2024-10-08T14:23:28+00:00"
         },
         {
             "name": "acato/wp-pre-commit-hook",
