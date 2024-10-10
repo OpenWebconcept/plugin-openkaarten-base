@@ -229,6 +229,86 @@ class Datalayers {
 				'type' => 'checkbox',
 			]
 		);
+
+		$cmb = new_cmb2_box(
+			[
+				'id'           => 'tooltip-metabox',
+				'title'        => __( 'Tooltip configuration', 'openkaarten-base' ),
+				'object_types' => [ 'owc_ok_datalayer' ],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'id'      => 'tooltip',
+				'type'    => 'flexible',
+				'options' => [
+					'sortable' => true,
+				],
+				'layouts' => [
+					'image'  => [
+						'title'  => __( 'Image', 'openkaarten-base' ),
+						'fields' => [
+							[
+								'type' => 'text',
+								'name' => __( 'Image URL', 'openkaarten-base' ),
+								'id'   => 'image_url',
+							],
+							[
+								'type' => 'text',
+								'name' => __( 'Image Alt Text', 'openkaarten-base' ),
+								'id'   => 'image_alt_text',
+							],
+						],
+					],
+					'title'  => [
+						'title'  => __( 'Title', 'openkaarten-base' ),
+						'fields' => [
+							[
+								'type' => 'text',
+								'name' => __( 'Title', 'openkaarten-base' ),
+								'id'   => 'title',
+							],
+						],
+					],
+					'meta'   => [
+						'title'  => __( 'Meta', 'openkaarten-base' ),
+						'fields' => [
+							[
+								'type' => 'text',
+								'name' => __( 'Meta', 'openkaarten-base' ),
+								'id'   => 'meta',
+							],
+						],
+					],
+					'text'   => [
+						'title'  => __( 'Text', 'openkaarten-base' ),
+						'fields' => [
+							[
+								'type' => 'textarea',
+								'name' => __( 'Text', 'openkaarten-base' ),
+								'id'   => 'text',
+							],
+						],
+					],
+					'button' => [
+						'title'  => __( 'Button', 'openkaarten-base' ),
+						'fields' => [
+							[
+								'type' => 'text',
+								'name' => __( 'Button Text', 'openkaarten-base' ),
+								'id'   => 'button_text',
+							],
+							[
+								'type' => 'text',
+								'name' => __( 'Button URL', 'openkaarten-base' ),
+								'id'   => 'button_url',
+							],
+						],
+					],
+				],
+			]
+		);
 	}
 
 	/**
