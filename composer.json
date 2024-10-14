@@ -18,11 +18,26 @@
         {
             "type": "git",
             "url": "git@github.com:richardkorthuis/geoPHP.git"
+        },
+        {
+            "type": "composer",
+            "url": "https://wpackagist.org",
+            "only": [
+                "wpackagist-plugin/*",
+                "wpackagist-theme/*"
+            ]
+        },
+        {
+            "type": "git",
+            "url": "git@github.com:acato-plugins/cmb2-flexible-content.git"
         }
     ],
     "require" : {
         "composer/installers" : "~1.0",
-        "richardkorthuis/geophp": "dev-development"
+        "richardkorthuis/geophp": "dev-development",
+        "wpackagist-plugin/cmb2": "*",
+        "acato-plugins/cmb2-flexible-content": "dev-master"
+
     },
     "require-dev" : {
         "acato/wp-pre-commit-hook": "*",
