@@ -276,11 +276,23 @@ class Locations {
 		$color = get_post_meta( $datalayer_id, 'default_marker_color', true );
 		$icon  = false;
 
+		$datalayer_url_type = get_post_meta( $datalayer_id, 'datalayer_url_type', true ) ? : 'import';
+
 		// Check marker customization and set correct marker icon and color.
 		if ( ! empty( $markers ) && ! empty( $marker_field ) ) {
 			foreach ( $markers as $marker_data ) {
 				if ( ! $location_id ) {
-					$location_marker_field = $location_data['properties'][ $marker_field ];
+					// Check the url type if it is live or import.
+					if ( 'live' === $datalayer_url_type ) {
+						$location_marker_field = $location_data[ $marker_field ];
+
+						// Turn boolean values into strings.
+						if ( is_bool( $location_marker_field ) ) {
+							$location_marker_field = $location_marker_field ? 'true' : 'false';
+						}
+					} else {
+						$location_marker_field = $location_data['properties'][ $marker_field ];
+					}
 				} else {
 					$prefix = '';
 					if ( 'owc_ok_location' === get_post_type( $location_id ) ) {

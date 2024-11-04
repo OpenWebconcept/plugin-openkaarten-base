@@ -214,14 +214,14 @@ class Cmb2 {
 
 				// Set the content for the marker popup.
 				if ( 'import' === $datalayer_url_type ) {
-					$marker_content = get_the_title( $location->ID ) . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>';
+					$marker_content  = get_the_title( $location->ID ) . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>';
+					$location_marker = Locations::get_location_marker( $object_id, $location->ID );
 				} else {
-					$title_fields   = get_post_meta( $object_id, 'title_field_mapping', true );
-					$title          = Importer::create_title_from_mapping( $location, $title_fields );
-					$marker_content = $title;
+					$title_fields    = get_post_meta( $object_id, 'title_field_mapping', true );
+					$title           = Importer::create_title_from_mapping( $location, $title_fields );
+					$marker_content  = $title;
+					$location_marker = Locations::get_location_marker( $object_id, false, $location );
 				}
-
-				$location_marker = Locations::get_location_marker( $object_id, $location->ID );
 
 				$locations[] = [
 					'feature' => $geometry_array,
