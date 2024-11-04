@@ -190,8 +190,7 @@ class Cmb2 {
 				$location_marker = Locations::get_location_marker( $object_id, $location->ID );
 
 				$locations[] = [
-					'lat'     => ( $bbox['miny'] + $bbox['maxy'] ) / 2,
-					'long'    => ( $bbox['minx'] + $bbox['maxx'] ) / 2,
+					'feature' => $geometry_array,
 					'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
 					'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
 					'color'   => $location_marker['color'],
@@ -216,6 +215,6 @@ class Cmb2 {
 			]
 		);
 
-		echo '<div id="map" class="map"></div>';
+		echo '<div id="map-base" class="map-base"></div>';
 	}
 }

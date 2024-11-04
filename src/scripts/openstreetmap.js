@@ -28,7 +28,7 @@ const config = {
 }
 
 // Create the map with the specified configuration.
-const map = new L.Map('map', {
+const map = new L.Map('map-base', {
   center: [config.centerY, config.centerX],
   zoom: config.defaultZoom,
   minZoom: config.minimumZoom,
@@ -49,8 +49,6 @@ if ( fitBounds ) {
 L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
-
-console.log(allowClick);
 
 if ( allowClick ) {
   map.on( 'click', function (e) {
@@ -112,24 +110,9 @@ function updateGeoFields(lat, lng) {
 
 // Add locations to the map as markers.
 if ( locationItems.length !== 0 ) {
-  // Create a marker cluster group for the locations.
-  const markers = new MarkerClusterGroup({
-    disableClusteringAtZoom: 13,
-    maxClusterRadius: 40,
-    iconCreateFunction: function(cluster) {
-      return L.divIcon({
-        className: 'leaflet-custom-icon',
-        html: "<div class='cluster-pin'></div><span class='cluster-count'>" + cluster.getChildCount() + "</span>",
-        iconSize: [30, 42],
-        iconAnchor: [15, 42]
-      });
-    }
-  });
-
   for (let i = 0; i < locationItems.length; i++) {
     const location = locationItems[i];
-    const lat = parseFloat( location.lat );
-    const lng = parseFloat( location.long );
+    const geojsonData = location.feature;
     const content = location.content;
 
     // Create a custom marker icon with the location color and icon.
@@ -138,25 +121,17 @@ if ( locationItems.length !== 0 ) {
       customIconHtml += "<span class='marker-icon'><img src='" + location.icon + "'  alt='marker icon' /></span>";
     }
 
-    var customIcon = L.divIcon( {
+    let customIcon = L.divIcon( {
       className: 'leaflet-custom-icon',
       html: customIconHtml,
       iconSize: [30, 42],
       iconAnchor: [15, 42]
     } );
 
-    let iconOptions = {
-      icon: customIcon
-    }
-
-    // Add the marker to the map.
-    const marker = L.marker( [lat, lng], iconOptions ).addTo( map );
-    marker.bindPopup( content );
-
-    // Add the marker to the cluster group.
-    markers.addLayer( marker );
+    var geojsonLayer = new L.GeoJSON( geojsonData, {
+      pointToLayer: function(feature, latlng) {
+        return L.marker(latlng, { icon: customIcon }).bindPopup( content );
+      }
+    }).addTo(map);
   }
-
-  // Add the marker cluster group to the map.
-  map.addLayer( markers );
 }
