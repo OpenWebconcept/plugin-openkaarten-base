@@ -104,6 +104,12 @@ class Importer {
 			return;
 		}
 
+		// Skip import if URL type is live instead of import.
+		$datalayer_url_type = get_post_meta( $post_id, 'datalayer_url_type', true );
+		if ( 'live' === $datalayer_url_type ) {
+			return;
+		}
+
 		// Check nonce validation.
 		if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
 			return;

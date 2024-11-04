@@ -110,11 +110,25 @@ class Cmb2 {
 	 */
 	public static function cmb2_render_openstreetmap_field_type( $field, $escaped_value, $object_id ) {
 
-		$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
+		$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true );
 
-		switch ( $datalayer_type ) {
-			case 'fileinput':
-			case 'url':
+		switch ( $datalayer_url_type ) {
+			case 'live':
+				// Retrieve the objects from the source file.
+				$datalayer_url = get_post_meta( $object_id, 'datalayer_url', true );
+
+				$datalayer_locations = wp_remote_get( $datalayer_url );
+				$datalayer_locations = json_decode( wp_remote_retrieve_body( $datalayer_locations ), true );
+
+				// Check if the source file is an array with items or an object with a data key.
+				if ( ! isset( $datalayer_locations[0] ) ) {
+					// Check what the key is for the data by getting the first key.
+					$data_key            = array_keys( $datalayer_locations )[0];
+					$datalayer_locations = $datalayer_locations[ $data_key ];
+				}
+
+				break;
+			case 'import':
 			default:
 				$meta_query = [
 					'relation' => 'AND',
@@ -163,17 +177,27 @@ class Cmb2 {
 		$locations = [];
 		if ( $datalayer_locations ) {
 			foreach ( $datalayer_locations as $location ) {
-				// Set min and max values for the map.
-				$geometry_object = get_post_meta( $location->ID, 'geometry' );
+
+				if ( 'import' === $datalayer_url_type ) {
+					$geometry_object = get_post_meta( $location->ID, 'geometry' );
+				} else {
+					$geometry_object = $location['geometry'] ?? null;
+				}
+
 				if ( ! $geometry_object ) {
 					continue;
 				}
 
-				$geometry_array = json_decode( $geometry_object[0], true );
-				if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
-					continue;
+				if ( 'import' === $datalayer_url_type ) {
+					$geometry_array = json_decode( $geometry_object[0], true );
+					if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
+						continue;
+					}
+				} else {
+					$geometry_array = $geometry_object;
 				}
 
+				// Set min and max values for the map.
 				$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
 				$bbox = $geom->getBBox();
 

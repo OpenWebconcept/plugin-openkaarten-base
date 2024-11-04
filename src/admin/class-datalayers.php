@@ -165,6 +165,24 @@ class Datalayers {
 			]
 		);
 
+		$cmb->add_field(
+			[
+				'name'       => __( 'Datalayer URL type', 'openkaarten-base' ),
+				'id'         => 'datalayer_url_type',
+				'type'       => 'radio_inline',
+				'desc'       => __( 'Select the URL type. Select import to import locations once with the option to synchronize later and select live to retrieve the datalayers from the source directly without importing them.', 'openkaarten-base' ),
+				'options'    => [
+					'import' => __( 'Import', 'openkaarten-base' ),
+					'live'   => __( 'Live', 'openkaarten-base' ),
+				],
+				'default'    => 'import',
+				'attributes' => [
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'url',
+				],
+			]
+		);
+
 		$cmb = new_cmb2_box(
 			[
 				'id'           => 'title_field_mapping_metabox',
