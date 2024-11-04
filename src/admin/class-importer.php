@@ -219,14 +219,7 @@ class Importer {
 			foreach ( $components as $component ) {
 				$properties = $component->getData();
 
-				$title = $title_fields;
-				foreach ( $properties as $key => $value ) {
-					if ( is_array( $value ) || is_object( $value ) ) {
-						continue;
-					}
-					$value = is_null( $value ) ? '' : $value;
-					$title = str_replace( '{' . $key . '}', $value, $title );
-				}
+				$title = self::create_title_from_mapping( $properties, $title_fields );
 
 				$location    = [
 					'post_title'  => $title,
@@ -262,6 +255,31 @@ class Importer {
 				update_post_meta( $location_id, 'field_geo_longitude', wp_slash( $longitude ) );
 			}
 		}
+	}
+
+	/**
+	 * Create the title from the mapping.
+	 * This function replaces the fields in the title with the actual values.
+	 *
+	 * @param array  $properties The properties.
+	 * @param string $title      The title.
+	 *
+	 * @return string The title.
+	 */
+	public static function create_title_from_mapping( $properties, $title ) {
+		if ( empty( $properties ) ) {
+			return $title;
+		}
+
+		foreach ( $properties as $key => $value ) {
+			if ( is_array( $value ) || is_object( $value ) ) {
+				continue;
+			}
+			$value = is_null( $value ) ? '' : $value;
+			$title = str_replace( '{' . $key . '}', $value, $title );
+		}
+
+		return $title;
 	}
 
 	/**

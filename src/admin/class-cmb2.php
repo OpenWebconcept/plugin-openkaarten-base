@@ -178,6 +178,8 @@ class Cmb2 {
 		if ( $datalayer_locations ) {
 			foreach ( $datalayer_locations as $location ) {
 
+				$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true ) ? : 'import';
+
 				if ( 'import' === $datalayer_url_type ) {
 					$geometry_object = get_post_meta( $location->ID, 'geometry' );
 				} else {
@@ -210,12 +212,20 @@ class Cmb2 {
 				$center_lat  = ( $min_lat + $max_lat ) / 2;
 				$center_long = ( $min_long + $max_long ) / 2;
 
-				$title           = get_the_title( $location->ID );
+				// Set the content for the marker popup.
+				if ( 'import' === $datalayer_url_type ) {
+					$marker_content = get_the_title( $location->ID ) . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>';
+				} else {
+					$title_fields   = get_post_meta( $object_id, 'title_field_mapping', true );
+					$title          = Importer::create_title_from_mapping( $location, $title_fields );
+					$marker_content = $title;
+				}
+
 				$location_marker = Locations::get_location_marker( $object_id, $location->ID );
 
 				$locations[] = [
 					'feature' => $geometry_array,
-					'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
+					'content' => $marker_content,
 					'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
 					'color'   => $location_marker['color'],
 				];
