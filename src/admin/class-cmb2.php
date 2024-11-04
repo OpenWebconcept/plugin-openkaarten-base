@@ -211,7 +211,6 @@ class Cmb2 {
 				'centerLong'   => esc_attr( $center_long ),
 				'defaultZoom'  => 10,
 				'fitBounds'    => true,
-				'allowClick'   => false,
 			]
 		);
 
