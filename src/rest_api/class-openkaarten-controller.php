@@ -70,6 +70,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			10,
 			4
 		);
+
+		add_filter( 'wp_rest_cache/allowed_endpoints', [ $this, 'wprc_add_caching_endpoint' ], 10, 1 );
 	}
 
 	/**
@@ -767,5 +769,20 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		];
 
 		return $output;
+	}
+
+	/**
+	 * Register endpoints to cache.
+	 *
+	 * @param array $allowed_endpoints Array of allowed endpoints.
+	 *
+	 * @return array
+	 */
+	public function wprc_add_caching_endpoint( $allowed_endpoints ) {
+		if ( ! isset( $allowed_endpoints['owc/openkaarten/v1'] ) ) {
+			$allowed_endpoints['owc/openkaarten/v1'][] = 'datasets';
+		}
+
+		return $allowed_endpoints;
 	}
 }
