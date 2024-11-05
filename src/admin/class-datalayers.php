@@ -159,6 +159,8 @@ class Datalayers {
 			]
 		);
 
+		$datalayer_url = get_post_meta( $cmb->object_id(), 'datalayer_url' ) ? get_post_meta( $cmb->object_id(), 'datalayer_url' )[0] : false;
+
 		$cmb->add_field(
 			[
 				'name'       => __( 'Datalayer URL', 'openkaarten-base' ),
@@ -169,6 +171,7 @@ class Datalayers {
 					'data-conditional-id'    => 'datalayer_type',
 					'data-conditional-value' => 'url',
 				],
+				'after'      => $datalayer_url ? '<p><a href="' . $datalayer_url . '" class="button" target="_blank">' . __( 'View source data', 'openkaarten-base' ) . '</a></p>' : '',
 			]
 		);
 
