@@ -498,10 +498,15 @@ class Datalayers {
 	/**
 	 * Show the import sync metabox.
 	 *
+	 * @param \CMB2 $cmb The CMB2 object.
+	 *
 	 * @return bool
 	 */
-	public static function show_import_sync_metabox() {
-		return 'url' === self::$datalayer_type && 'import' === self::$datalayer_url_type;
+	public static function show_import_sync_metabox( $cmb ) {
+		// Check if title field mapping is done.
+		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
+
+		return 'url' === self::$datalayer_type && 'import' === self::$datalayer_url_type && ! empty( $title_field_mapping );
 	}
 
 	/**
