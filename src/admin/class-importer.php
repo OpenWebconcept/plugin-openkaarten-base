@@ -289,9 +289,18 @@ class Importer {
 		}
 
 		foreach ( $properties as $key => $value ) {
+			// Check if the key is title, then also look for title > rendered value.
+			if ( 'title' === $key ) {
+				if ( is_array( $value ) && isset( $value['rendered'] ) ) {
+					$value = $value['rendered'];
+				}
+			}
+
+			// Furthermore, skip all arrays and objects.
 			if ( is_array( $value ) || is_object( $value ) ) {
 				continue;
 			}
+
 			$value = is_null( $value ) ? '' : $value;
 			$title = str_replace( '{' . $key . '}', $value, $title );
 		}

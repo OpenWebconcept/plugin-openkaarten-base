@@ -746,6 +746,11 @@ class Datalayers {
 
 			$source_fields = [];
 			if ( ! empty( $url_data ) ) {
+				// Check if the data contains the title.rendered and add this as title.
+				if ( isset( $url_data['title']['rendered'] ) ) {
+					$source_fields[] = 'title';
+				}
+
 				foreach ( $url_data as $key => $val ) {
 					if ( is_array( $val ) || is_object( $val ) ) {
 						continue;
