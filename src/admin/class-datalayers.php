@@ -720,9 +720,14 @@ class Datalayers {
 			return [];
 		}
 
-		// Check if the data is an array with a data key and if so, use that data.
-		if ( isset( $data['data'] ) && is_array( $data['data'] ) ) {
-			$data = $data['data'];
+		$array_keys_to_look_for = [ 'data', 'results' ];
+
+		// Check if the data is an array with a key from the $array_keys_to_look_for and if so, use that data.
+		foreach ( $array_keys_to_look_for as $key ) {
+			if ( isset( $data[ $key ] ) ) {
+				$data = $data[ $key ];
+				break;
+			}
 		}
 
 		if ( $single ) {

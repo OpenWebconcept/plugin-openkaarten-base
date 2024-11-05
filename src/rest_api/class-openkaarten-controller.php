@@ -610,7 +610,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		// Retrieve the geometry based on the type of request.
 		switch ( $type ) {
 			case 'live':
-				$geometry_json = $item['geometry'];
+				$geometry_json = Helper::array_search_recursive( 'geometry', $item ) ? : false;
 
 				if ( ! $geometry_json ) {
 					return false;

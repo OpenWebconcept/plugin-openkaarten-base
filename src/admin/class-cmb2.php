@@ -121,11 +121,13 @@ class Cmb2 {
 				$datalayer_locations = wp_remote_get( $datalayer_url );
 				$datalayer_locations = json_decode( wp_remote_retrieve_body( $datalayer_locations ), true );
 
-				// Check if the source file is an array with items or an object with a data key.
-				if ( ! isset( $datalayer_locations[0] ) ) {
-					// Check what the key is for the data by getting the first key.
-					$data_key            = array_keys( $datalayer_locations )[0];
-					$datalayer_locations = $datalayer_locations[ $data_key ];
+				$array_keys_to_look_for = [ 'data', 'results' ];
+				// Check if the data is an array with a key from the $array_keys_to_look_for and if so, use that data.
+				foreach ( $array_keys_to_look_for as $key ) {
+					if ( isset( $datalayer_locations[ $key ] ) ) {
+						$datalayer_locations = $datalayer_locations[ $key ];
+						break;
+					}
 				}
 
 				break;
@@ -184,7 +186,7 @@ class Cmb2 {
 				if ( 'import' === $datalayer_url_type ) {
 					$geometry_object = get_post_meta( $location->ID, 'geometry' );
 				} else {
-					$geometry_object = $location['geometry'] ?? null;
+					$geometry_object = Helper::array_search_recursive( 'geometry', $location ) ? : false;
 				}
 
 				if ( ! $geometry_object ) {

@@ -210,10 +210,18 @@ class Helper {
 				$feature['id'] = $array_item_values['id'];
 			}
 
-			if ( isset( $array_item_values['geometry'] ) ) {
-				$feature['geometry']      = $array_item_values['geometry'];
+			// Look for geometry and set it. It can either be in the root of the array or in a 'geometry' key or in a 'geometry' key with a different key.
+			// Search for geometry somewhere in the multidimensional array.
+			$geometry = self::array_search_recursive( 'geometry', $array_item_values );
+
+			if ( ! empty( $geometry ) ) {
+				$feature['geometry']      = $geometry;
 				$feature['geometry_name'] = 'geom';
-				unset( $array_item_values['geometry'] );
+
+				// Remove the geometry from the properties.
+				if ( isset( $array_item_values['geometry'] ) ) {
+					unset( $array_item_values['geometry'] );
+				}
 			}
 
 			foreach ( $array_item_values as $key => $value ) {
@@ -224,5 +232,28 @@ class Helper {
 		}
 
 		return wp_json_encode( $geojson );
+	}
+
+	/**
+	 * Search for a key in a multidimensional array.
+	 *
+	 * @param string $needle The key to search for.
+	 * @param array  $haystack The array to search in.
+	 *
+	 * @return mixed The value of the key if found, false otherwise.
+	 */
+	public static function array_search_recursive( $needle, $haystack ) {
+		foreach ( $haystack as $key => $value ) {
+			if ( $needle === $key ) {
+				return $value;
+			}
+			if ( is_array( $value ) ) {
+				$result = self::array_search_recursive( $needle, $value );
+				if ( $result ) {
+					return $result;
+				}
+			}
+		}
+		return false;
 	}
 }
