@@ -310,9 +310,16 @@ class Importer {
 				}
 			}
 
-			// Furthermore, skip all arrays and objects.
-			if ( is_array( $value ) || is_object( $value ) ) {
-				continue;
+			if ( is_object( $value ) ) {
+				$value = (array) $value;
+			}
+
+			if ( is_array( $value ) ) {
+				// Find the first key that has a value.
+				$second_key = array_key_first( $value );
+
+				// Look for the value if it's a multidimensional array.
+				$value = $value[ $second_key ];
 			}
 
 			$value = is_null( $value ) ? '' : $value;
