@@ -48,6 +48,7 @@ class Cmb2 {
 		add_action( 'cmb2_render_markerpreview', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_markerpreview_field_type' ], 10, 5 );
 		add_action( 'cmb2_render_openstreetmap', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_openstreetmap_field_type' ], 10, 5 );
 		add_action( 'cmb2_render_geomap', [ 'Openkaarten_Base_Functions\Openkaarten_Base_Functions', 'cmb2_render_geomap_field_type' ], 10, 5 );
+		add_action( 'cmb2_render_import_sync', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_import_sync_field_type' ], 10, 5 );
 	}
 
 	/**
@@ -249,5 +250,31 @@ class Cmb2 {
 		);
 
 		echo '<div id="map-base" class="map-base"></div>';
+	}
+
+	/**
+	 * Adds a custom field type for a button to sync or import data.
+	 *
+	 * @param  object $field             The CMB2_Field type object.
+	 * @param  mixed  $escaped_value     The value of this field passed through the escaping filter.
+	 * @param  int    $object_id         The ID of the object this field is saving to.
+	 *
+	 * @return void
+	 */
+	public function cmb2_render_import_sync_field_type( $field, $escaped_value, $object_id ) {
+		$last_updated = get_post_meta( $object_id, 'datalayer_last_import', true );
+
+		// Get URL of edit post page.
+		$edit_post_url = get_edit_post_link( $object_id );
+
+		echo '<form method="post" style="margin-top:10px;">
+                <input type="hidden" name="sync_import_file" value="1">
+                <input type="hidden" name="post_id" value="' . esc_attr( $object_id ) . '">
+                <input type="hidden" name="redirect_url" value="' . esc_attr( $edit_post_url ) . '">
+                <input type="submit" name="submit_sync_import_file" class="button button-primary button-large" value="' . esc_html__( 'Sync data', 'openkaarten-base' ) . '">
+            </form>';
+
+		// translators: %s is the last updated date.
+		echo '<p>' . sprintf( esc_html__( 'Last synced at: %s', 'openkaarten-base' ), esc_attr( $last_updated ) ) . '</p>';
 	}
 }

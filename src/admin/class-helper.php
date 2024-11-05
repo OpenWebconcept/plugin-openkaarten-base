@@ -195,7 +195,7 @@ class Helper {
 	 *
 	 * @return string The GeoJSON.
 	 */
-	public static function array_to_geojson( $array ) {
+	public static function array_to_geojson( $array ) { // phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames.arrayFound -- This is a helper function.
 		$geojson = [
 			'type'     => 'FeatureCollection',
 			'features' => [],
@@ -223,6 +223,6 @@ class Helper {
 			$geojson['features'][] = $feature;
 		}
 
-		return json_encode( $geojson );
+		return wp_json_encode( $geojson );
 	}
 }

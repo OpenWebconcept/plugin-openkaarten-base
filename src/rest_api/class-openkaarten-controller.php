@@ -571,7 +571,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 				$query_result = $posts_query->query( $location_args );
 
 				foreach ( $query_result as $post ) {
-					$location = $this->prepare_location_for_response( $post, $request );
+					$location = $this->prepare_location_for_response( $post, $request, 'import', $item->ID );
 					if ( $location ) {
 						$locations[] = $location;
 					}
@@ -621,6 +621,10 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 
 				// Get dataset id param from URL.
 				$dataset_id = $datalayer_id;
+
+				// Add location title based on the title field mapping.
+				$title_fields   = get_post_meta( $datalayer_id, 'title_field_mapping', true );
+				$location_title = Importer::create_title_from_mapping( (array) $item, $title_fields );
 				break;
 			case 'import':
 			default:
@@ -636,8 +640,13 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 				unset( $item_data['properties'] );
 
 				$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
+
+				// Add location title based on the post title.
+				$location_title = $item->post_title;
 				break;
 		}
+
+		$item_data['properties']['title'] = $location_title;
 
 		// Get all cmb2 fields for the dataset post type.
 		$source_fields = get_post_meta( $dataset_id, 'source_fields', true );

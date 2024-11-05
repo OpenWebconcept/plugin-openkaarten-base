@@ -24,6 +24,13 @@ class Datalayers {
 	private static $datalayer_type;
 
 	/**
+	 * The datalayer URL type.
+	 *
+	 * @var string
+	 */
+	private static $datalayer_url_type;
+
+	/**
 	 * The datalayer URL data.
 	 *
 	 * @var array
@@ -185,6 +192,23 @@ class Datalayers {
 
 		$cmb = new_cmb2_box(
 			[
+				'id'           => 'datalayer_import_metabox',
+				'title'        => __( 'Datalayer Import', 'openkaarten-base' ),
+				'object_types' => [ 'owc_ok_datalayer' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_import_sync_metabox' ],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name' => __( 'Datalayer Import', 'openkaarten-base' ),
+				'id'   => 'datalayer_import_sync',
+				'type' => 'import_sync',
+			]
+		);
+
+		$cmb = new_cmb2_box(
+			[
 				'id'           => 'title_field_mapping_metabox',
 				'title'        => __( 'Title field mapping', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
@@ -192,7 +216,8 @@ class Datalayers {
 			]
 		);
 
-		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
+		self::$datalayer_type     = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
+		self::$datalayer_url_type = get_post_meta( $cmb->object_id(), 'datalayer_url_type', true ) ? : 'import';
 
 		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
 
@@ -220,7 +245,8 @@ class Datalayers {
 				'id'         => 'title_field_mapping',
 				'type'       => 'text',
 				// translators: %s: source fields.
-				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s', 'openkaarten-base' ), implode( ', ', $source_fields ) ),
+				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s.', 'openkaarten-base' ), implode( ', ', $source_fields ) ) .
+								'<br /><span style="color: red;"><strong>' . __( 'Be aware: updating this field will automatically sync all items!', 'openkaarten-base' ) . '</strong></span>',
 				'attributes' => [
 					'required'               => 'required',
 					'data-conditional-id'    => 'datalayer_type',
@@ -467,6 +493,15 @@ class Datalayers {
 
 		return ( ! empty( $datalayer_file ) && 'fileinput' === self::$datalayer_type ) ||
 				( ! empty( $datalayer_url ) && 'url' === self::$datalayer_type );
+	}
+
+	/**
+	 * Show the import sync metabox.
+	 *
+	 * @return bool
+	 */
+	public static function show_import_sync_metabox() {
+		return 'url' === self::$datalayer_type && 'import' === self::$datalayer_url_type;
 	}
 
 	/**

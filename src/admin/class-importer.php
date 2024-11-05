@@ -35,7 +35,9 @@ class Importer {
 	 */
 	private function __construct() {
 		add_action( 'add_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'add_post_meta' ], 10, 3 );
-		add_action( 'update_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'update_post_meta' ], 10, 4 );
+		add_action( 'update_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'update_post_meta' ], 5, 4 );
+		add_action( 'admin_init', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'handle_sync_import_file' ] );
+		add_action( 'admin_notices', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'show_sync_notice' ] );
 	}
 
 	/**
@@ -160,11 +162,11 @@ class Importer {
 	 * Import the locations.
 	 *
 	 * @param int    $post_id    The post ID.
-	 * @param string $meta_value The meta value.
+	 * @param string $title_field_value The title field value.
 	 *
-	 * @return void
+	 * @return bool
 	 */
-	public static function import_locations( $post_id, $meta_value = false ) {
+	public static function import_locations( $post_id, $title_field_value ) {
 		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
 
 		switch ( $datalayer_type ) {
@@ -189,15 +191,25 @@ class Importer {
 			// Add error message via transient.
 			set_transient( 'owc_ok_transient', __( 'The GeoJSON file is not valid.', 'openkaarten-base' ), 100 );
 
-			return;
+			return false;
 		}
 
-		$components = $geom->getComponents();
+		// Check if the geo response is a single Geometry or a GeometryCollection.
+		if ( 'GeometryCollection' === $geom->geometryType() ) {
+			$components = $geom->getComponents();
+		} else {
+			$components = [ $geom ];
+		}
 
 		// Catch all the fields in brackets from the title fields and replace them with the actual values.
-		$title_fields = $meta_value;
+		$title_fields = $title_field_value;
 		if ( empty( $title_fields ) ) {
 			$title_fields = '{' . array_key_first( $components[0]->getData() ) . '}';
+		}
+
+		// If still empty, look for a title field.
+		if ( empty( $title_fields ) ) {
+			$title_fields = '{title}';
 		}
 
 		if ( count( $components ) ) {
@@ -254,6 +266,11 @@ class Importer {
 				update_post_meta( $location_id, 'field_geo_latitude', wp_slash( $latitude ) );
 				update_post_meta( $location_id, 'field_geo_longitude', wp_slash( $longitude ) );
 			}
+
+			// Set date of last import.
+			update_post_meta( $post_id, 'datalayer_last_import', current_time( 'mysql' ) );
+
+			return true;
 		}
 	}
 
@@ -295,5 +312,60 @@ class Importer {
 		$geom = Conversion::convert_coordinates( $geom, 'WGS84' );
 
 		return wp_json_encode( $geom );
+	}
+
+	/**
+	 * Handle the sync import file.
+	 *
+	 * @return void
+	 */
+	public static function handle_sync_import_file() {
+		// Check if the form has been submitted by looking for our hidden input.
+		if ( isset( $_POST['sync_import_file'] ) && isset( $_POST['submit_sync_import_file'] ) ) {
+
+			// Check nonce validation.
+			if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
+				return;
+			}
+
+			// Verify the user has permission to perform this action.
+			if ( ! current_user_can( 'edit_posts' ) ) {
+				return;
+			}
+
+			// Get the post ID from the hidden input.
+			$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : null;
+
+			if ( ! $post_id ) {
+				return;
+			}
+
+			// Perform the import.
+			$title_field_value = get_post_meta( $post_id, 'title_field_mapping', true );
+			$response          = self::import_locations( $post_id, $title_field_value );
+
+			// Redirect to avoid re-submission on page reload.
+			if ( $response && isset( $_POST['redirect_url'] ) ) {
+				wp_safe_redirect( add_query_arg( 'synced', '1', sanitize_url( wp_unslash( $_POST['redirect_url'] ) ) ) );
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * Show the sync notice.
+	 *
+	 * @return void
+	 */
+	public static function show_sync_notice() {
+		$screen = get_current_screen();
+
+		// Check if on post edit screen and if 'synced' parameter is set.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- We need to check the $_GET parameter.
+		if ( 'post' === $screen->base && isset( $_GET['synced'] ) ) {
+			echo '<div class="notice notice-success is-dismissible">
+	            <p>' . esc_html__( 'Sync completed successfully!', 'openkaarten-base' ) . '</p>
+	        </div>';
+		}
 	}
 }
