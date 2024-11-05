@@ -122,8 +122,22 @@ class Importer {
 		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- We need to read the source fields.
-		$source_fields          = wp_unslash( $_POST['source_fields'] );
+		$source_fields = wp_unslash( $_POST['source_fields'] );
+		self::update_field_mapping( $post_id, $source_fields );
+		self::import_locations( $post_id, $meta_value );
+	}
+
+	/**
+	 * Update the field mapping.
+	 *
+	 * @param int   $post_id       The post ID.
+	 * @param array $source_fields The source fields.
+	 *
+	 * @return bool
+	 */
+	public static function update_field_mapping( $post_id, $source_fields ) {
 		$original_source_fields = get_post_meta( $post_id, 'source_fields', true ) ?: [];
+
 		if ( ! empty( $original_source_fields ) ) {
 			foreach ( $original_source_fields as $field ) {
 				$key = array_search( $field['field_label'], array_column( $source_fields, 'field_label' ), true );
@@ -155,7 +169,7 @@ class Importer {
 			}
 		}
 
-		self::import_locations( $post_id, $meta_value );
+		return true;
 	}
 
 	/**
@@ -351,10 +365,10 @@ class Importer {
 
 			// Perform the import.
 			$title_field_value = get_post_meta( $post_id, 'title_field_mapping', true );
-			$response          = self::import_locations( $post_id, $title_field_value );
+			$response_import   = self::import_locations( $post_id, $title_field_value );
 
 			// Redirect to avoid re-submission on page reload.
-			if ( $response && isset( $_POST['redirect_url'] ) ) {
+			if ( $response_import && isset( $_POST['redirect_url'] ) ) {
 				wp_safe_redirect( add_query_arg( 'synced', '1', sanitize_url( wp_unslash( $_POST['redirect_url'] ) ) ) );
 				exit;
 			}
