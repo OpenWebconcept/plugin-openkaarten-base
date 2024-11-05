@@ -765,9 +765,6 @@ class Datalayers {
 				}
 
 				foreach ( $url_data as $key => $val ) {
-					if ( is_array( $val ) || is_object( $val ) ) {
-						continue;
-					}
 					$source_fields[] = $key;
 				}
 			}
