@@ -9,6 +9,7 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
 
 /**
@@ -22,6 +23,13 @@ class Datalayers {
 	 * @var string
 	 */
 	private static $datalayer_type;
+
+	/**
+	 * The datalayer properties.
+	 *
+	 * @var string
+	 */
+	private static $datalayer_properties;
 
 	/**
 	 * The datalayer URL data.
@@ -165,6 +173,21 @@ class Datalayers {
 			]
 		);
 
+		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
+
+		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
+
+		if ( empty( $source_fields ) ) {
+			return;
+		}
+
+		$source_fields = array_map(
+			function ( $field ) {
+				return '{' . $field . '}';
+			},
+			$source_fields
+		);
+
 		$cmb = new_cmb2_box(
 			[
 				'id'           => 'title_field_mapping_metabox',
@@ -173,19 +196,6 @@ class Datalayers {
 				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
 			]
 		);
-
-		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
-
-		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
-
-		if ( ! empty( $source_fields ) ) {
-			$source_fields = array_map(
-				function ( $field ) {
-					return '{' . $field . '}';
-				},
-				$source_fields
-			);
-		}
 
 		$cmb = new_cmb2_box(
 			[
@@ -522,7 +532,7 @@ class Datalayers {
 
 				break;
 			case 'url':
-				$data_array = self::fetch_datalayer_url_data( $object_id, true );
+				$data_array = self::fetch_datalayer_url_properties( $object_id );
 
 				break;
 		}
@@ -636,15 +646,10 @@ class Datalayers {
 	 * Fetch the data from an external source URL.
 	 *
 	 * @param int|string $object_id The object ID.
-	 * @param bool       $properties_only Whether to fetch only the properties.
 	 *
-	 * @return \geoPHP\Geometry\Geometry|array
+	 * @return mixed
 	 */
-	public static function fetch_datalayer_url_data( $object_id, $properties_only = false ) {
-		if ( self::$datalayer_url_data && ! $properties_only ) {
-			return self::$datalayer_url_data;
-		}
-
+	public static function fetch_datalayer_url_data( $object_id ) {
 		$url      = get_post_meta( $object_id, 'datalayer_url', true );
 		$response = wp_remote_get( $url );
 
@@ -658,20 +663,63 @@ class Datalayers {
 			return [];
 		}
 
-		$data = geoPHP::load( $body );
+		return $body;
+	}
 
-		// Get properties from the data in the components.
-		if ( $properties_only ) {
-			if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
-				return [];
-			}
-
-			return $data->getComponents()[0]->getData();
+	/**
+	 * Fetch the data from an external source URL. Parse the data and return the properties.
+	 *
+	 * @param int|string $object_id The object ID.
+	 *
+	 * @return array
+	 */
+	public static function fetch_datalayer_url_properties( $object_id ) {
+		// Check if properties are set in the static variable.
+		if ( self::$datalayer_properties ) {
+			return self::$datalayer_properties;
 		}
 
-		self::$datalayer_url_data = $data;
+		$url      = get_post_meta( $object_id, 'datalayer_url', true );
+		$response = wp_remote_get( $url );
 
-		return $data;
+		if ( is_wp_error( $response ) ) {
+			return [];
+		}
+
+		$body = self::fetch_datalayer_url_data( $object_id );
+
+		if ( ! $body ) {
+			return [];
+		}
+
+		// Get properties from the data in the components.
+		try {
+			$data = geoPHP::load( $body );
+		} catch ( IOException $e ) {
+			// Add error message via admin notice.
+			add_action(
+				'admin_notices',
+				function () use ( $e ) {
+					?>
+					<div class="notice notice-error">
+						<p><?php echo esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ); ?></p>
+					</div>
+					<?php
+				}
+			);
+
+			return [];
+		}
+
+		if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
+			return [];
+		}
+
+		$datalayer_properties = $data->getComponents()[0]->getData();
+
+		self::$datalayer_properties = $datalayer_properties;
+
+		return $datalayer_properties;
 	}
 
 	/**
@@ -687,7 +735,7 @@ class Datalayers {
 			$source_fields = self::cmb2_get_source_fields( $object_id );
 		} elseif ( 'url' === self::$datalayer_type ) {
 			// Retrieve content from URL and get the source fields.
-			$url_data = self::fetch_datalayer_url_data( $object_id, true );
+			$url_data = self::fetch_datalayer_url_properties( $object_id );
 
 			$source_fields = [];
 			if ( ! empty( $url_data ) ) {

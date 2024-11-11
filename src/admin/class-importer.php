@@ -9,8 +9,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
-use Exception;
 use geoPHP\Adapter\GeoJSON;
+use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
 use Openkaarten_Base_Plugin\Conversion;
 
@@ -175,12 +175,21 @@ class Importer {
 				break;
 		}
 
-		// Check if data is valid GeoJSON and if we can parse it.
+		// Check if data is valid GeoJSON and if we can parse it. If not, a IOException will be thrown.
 		try {
 			$geom = geoPHP::load( $data );
-		} catch ( Exception $e ) {
-			// Add error message via transient.
-			set_transient( 'owc_ok_transient', __( 'The GeoJSON file is not valid.', 'openkaarten-base' ), 100 );
+		} catch ( IOException $e ) {
+			// Add error message via admin notice.
+			add_action(
+				'admin_notices',
+				function () use ( $e ) {
+					?>
+					<div class="notice notice-error">
+						<p><?php echo esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ); ?></p>
+					</div>
+					<?php
+				}
+			);
 
 			return;
 		}
