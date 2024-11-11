@@ -26,7 +26,7 @@ class Datalayers {
 	/**
 	 * The datalayer URL data.
 	 *
-	 * @var array
+	 * @var \geoPHP\Geometry\Geometry
 	 */
 	private static $datalayer_url_data;
 
@@ -513,10 +513,6 @@ class Datalayers {
 				$file_contents = file_get_contents( $file );
 				$data          = geoPHP::load( $file_contents );
 
-				if ( ! $data ) {
-					return $value;
-				}
-
 				// Get properties from the data in the components.
 				if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
 					return $value;
@@ -526,13 +522,8 @@ class Datalayers {
 
 				break;
 			case 'url':
-				$url_data = self::fetch_datalayer_url_data( $object_id, true );
+				$data_array = self::fetch_datalayer_url_data( $object_id, true );
 
-				if ( empty( $url_data ) ) {
-					return $value;
-				}
-
-				$data_array = $url_data;
 				break;
 		}
 
@@ -645,12 +636,12 @@ class Datalayers {
 	 * Fetch the data from an external source URL.
 	 *
 	 * @param int|string $object_id The object ID.
-	 * @param bool       $single Whether to return a single result.
+	 * @param bool       $properties_only Whether to fetch only the properties.
 	 *
-	 * @return array
+	 * @return \geoPHP\Geometry\Geometry|array
 	 */
-	public static function fetch_datalayer_url_data( $object_id, $single = false ) {
-		if ( self::$datalayer_url_data ) {
+	public static function fetch_datalayer_url_data( $object_id, $properties_only = false ) {
+		if ( self::$datalayer_url_data && ! $properties_only ) {
 			return self::$datalayer_url_data;
 		}
 
@@ -662,19 +653,20 @@ class Datalayers {
 		}
 
 		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
 
-		if ( empty( $data ) ) {
+		if ( ! $body ) {
 			return [];
 		}
 
-		// Check if the data is an array with a data key and if so, use that data.
-		if ( isset( $data['data'] ) && is_array( $data['data'] ) ) {
-			$data = $data['data'];
-		}
+		$data = geoPHP::load( $body );
 
-		if ( $single ) {
-			$data = reset( $data );
+		// Get properties from the data in the components.
+		if ( $properties_only ) {
+			if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
+				return [];
+			}
+
+			return $data->getComponents()[0]->getData();
 		}
 
 		self::$datalayer_url_data = $data;
@@ -729,12 +721,14 @@ class Datalayers {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
 		$data = file_get_contents( $file );
 		$geom = geoPHP::load( $data );
-		$json = $geom->out( 'json' );
-		$data = json_decode( $json, true );
+
+		if ( ! $geom->getComponents() && ! $geom->getComponents()[0] ) {
+			return [];
+		}
 
 		$source_fields = [];
-		if ( $data ) {
-			foreach ( $data['features'][0]['properties'] as $key => $val ) {
+		if ( $geom->getComponents()[0]->getData() ) {
+			foreach ( $geom->getComponents()[0]->getData() as $key => $val ) {
 				$source_fields[] = $key;
 			}
 		}

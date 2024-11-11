@@ -167,12 +167,11 @@ class Importer {
 				$file = get_attached_file( get_post_meta( $post_id, 'datalayer_file_id', true ) );
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
 				$data = file_get_contents( $file );
+
 				break;
 			case 'url':
 				$data = Datalayers::fetch_datalayer_url_data( $post_id );
 
-				// Convert data to GeoJSON.
-				$data = Helper::array_to_geojson( $data );
 				break;
 		}
 
@@ -241,19 +240,8 @@ class Importer {
 				}
 
 				$geometry = self::process_geometry( $component );
+
 				update_post_meta( $location_id, 'geometry', wp_slash( $geometry ) );
-
-				// Retrieve address with geometry lat/lon.
-				$geometry_array = json_decode( $geometry, true );
-				$latitude       = $geometry_array['geometry']['coordinates'][1];
-				$longitude      = $geometry_array['geometry']['coordinates'][0];
-
-				if ( empty( $latitude ) || empty( $longitude ) ) {
-					continue;
-				}
-
-				update_post_meta( $location_id, 'field_geo_latitude', wp_slash( $latitude ) );
-				update_post_meta( $location_id, 'field_geo_longitude', wp_slash( $longitude ) );
 			}
 		}
 	}

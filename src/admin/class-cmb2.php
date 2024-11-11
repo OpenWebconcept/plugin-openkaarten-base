@@ -169,6 +169,16 @@ class Cmb2 {
 				}
 
 				$geometry_array = json_decode( $geometry_object[0], true );
+
+				// Check if the geometry object has a type Feature wrapper or not.
+				if ( 'Feature' !== $geometry_array['type'] ) {
+					$geometry_array = [
+						'type'       => 'Feature',
+						'geometry'   => $geometry_array,
+						'propreties' => [],
+					];
+				}
+
 				if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
 					continue;
 				}
