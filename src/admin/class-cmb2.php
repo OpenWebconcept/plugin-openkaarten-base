@@ -126,37 +126,26 @@ class Cmb2 {
 			case 'fileinput':
 			case 'url':
 			default:
-				$meta_query = [
-					'relation' => 'AND',
-					[
-						'key'     => 'geometry',
-						'compare' => 'EXISTS',
-					],
-				];
+				global $wpdb;
 
-				$meta_query = array_merge(
-					$meta_query,
-					[
-						[
-							'key'     => 'location_datalayer_id',
-							'value'   => $object_id,
-							'compare' => '=',
-						],
-					]
+				// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
+				$datalayer_locations = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT p.ID FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
+            WHERE p.post_type = 'owc_ok_location'
+              AND p.post_status = 'publish'
+              AND pm.meta_key = 'geometry'
+              AND pm.meta_value IS NOT NULL
+              AND pm2.meta_key = 'location_datalayer_id'
+              AND pm2.meta_value = %s
+            ORDER BY p.post_title ASC",
+						$object_id
+					)
 				);
 
-				$args = wp_parse_args(
-					[
-						'post_type'   => 'owc_ok_location',
-						'numberposts' => -1,
-						'orderby'     => 'title',
-						'order'       => 'ASC',
-						// phpcs:ignore WordPress.DB.SlowDBQuery -- This query is needed to get the locations.
-						'meta_query'  => $meta_query,
-					]
-				);
-
-				$datalayer_locations = get_posts( $args );
 				break;
 		}
 

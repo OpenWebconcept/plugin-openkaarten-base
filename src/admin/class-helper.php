@@ -223,6 +223,6 @@ class Helper {
 			$geojson['features'][] = $feature;
 		}
 
-		return json_encode( $geojson );
+		return wp_json_encode( $geojson );
 	}
 }
