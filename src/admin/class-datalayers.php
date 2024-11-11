@@ -510,14 +510,20 @@ class Datalayers {
 				}
 				$file = get_attached_file( $datalayer_file );
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-				$json = file_get_contents( $file );
-				$data = json_decode( $json, true );
+				$file_contents = file_get_contents( $file );
+				$data          = geoPHP::load( $file_contents );
 
 				if ( ! $data ) {
 					return $value;
 				}
 
-				$data_array = $data['features'][0]['properties'];
+				// Get properties from the data in the components.
+				if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
+					return $value;
+				}
+
+				$data_array = $data->getComponents()[0]->getData();
+
 				break;
 			case 'url':
 				$url_data = self::fetch_datalayer_url_data( $object_id, true );
