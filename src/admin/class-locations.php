@@ -104,7 +104,9 @@ class Locations {
 
 		self::cmb2_location_fixed_fields();
 
-		Openkaarten_Base_Functions::cmb2_location_geometry_fields( $post_id, [ 'owc_ok_location' ] );
+		if ( class_exists( '\Openkaarten_Base_Functions\Openkaarten_Base_Functions' ) ) {
+			Openkaarten_Base_Functions::cmb2_location_geometry_fields( $post_id, [ 'owc_ok_location' ] );
+		}
 	}
 
 	/**
@@ -385,7 +387,9 @@ class Locations {
 		}
 
 		// Execute the save_geometry_object function from the Openkaarten_Base_Functions class.
-		\Openkaarten_Base_Functions\Openkaarten_Base_Functions::save_geometry_object( $post_id, $properties );
+		if ( class_exists( '\Openkaarten_Base_Functions\Openkaarten_Base_Functions' ) ) {
+			Openkaarten_Base_Functions::save_geometry_object( $post_id, $properties );
+		}
 	}
 
 	/**
