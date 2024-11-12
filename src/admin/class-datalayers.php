@@ -18,6 +18,13 @@ use geoPHP\geoPHP;
 class Datalayers {
 
 	/**
+	 * The CMB2 object id.
+	 *
+	 * @var int
+	 */
+	private static $cmb_object_id;
+
+	/**
 	 * The datalayer type.
 	 *
 	 * @var string
@@ -51,6 +58,18 @@ class Datalayers {
 	 * @return void
 	 */
 	private function __construct() {
+		// Define global $cmb object id.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+		if ( ! empty( $_POST['post_ID'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+			self::$cmb_object_id = intval( $_POST['post_ID'] );
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not needed here.
+		if ( ! empty( $_GET['post'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not needed here.
+			self::$cmb_object_id = intval( $_GET['post'] );
+		}
+
 		add_action( 'init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'register_datalayer_post_type' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_datalayer_metaboxes' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
@@ -112,6 +131,7 @@ class Datalayers {
 				'id'           => 'datalayer_metabox',
 				'title'        => __( 'Datalayer', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_datalayer_metabox' ],
 			]
 		);
 
@@ -159,6 +179,26 @@ class Datalayers {
 			]
 		);
 
+		if ( ! self::$cmb_object_id ) {
+			return;
+		}
+
+		self::$datalayer_type = get_post_meta( self::$cmb_object_id, 'datalayer_type', true );
+
+		$source_fields = self::get_datalayer_source_fields( self::$cmb_object_id );
+
+		// Stop here if we can't get the source fields.
+		if ( empty( $source_fields ) ) {
+			return;
+		}
+
+		$source_fields = array_map(
+			function ( $field ) {
+				return '{' . $field . '}';
+			},
+			$source_fields
+		);
+
 		$cmb = new_cmb2_box(
 			[
 				'id'           => 'title_field_mapping_metabox',
@@ -166,17 +206,6 @@ class Datalayers {
 				'object_types' => [ 'owc_ok_datalayer' ],
 				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_title_mapping_metabox' ],
 			]
-		);
-
-		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
-
-		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
-
-		$source_fields = array_map(
-			function ( $field ) {
-				return '{' . $field . '}';
-			},
-			$source_fields
 		);
 
 		$cmb->add_field(
@@ -280,6 +309,10 @@ class Datalayers {
 	 * @return void
 	 */
 	public static function add_markers_metaboxes() {
+		if ( ! self::$cmb_object_id ) {
+			return;
+		}
+
 		$prefix = 'datalayer_markers_';
 
 		$cmb = new_cmb2_box(
@@ -405,6 +438,38 @@ class Datalayers {
 	}
 
 	/**
+	 * Check if the current screen is the correct CMB2 screen.
+	 *
+	 * @return bool
+	 */
+	public static function get_correct_cmb2_screen() {
+		// Get the current screen object.
+		$screen = get_current_screen();
+
+		// Check if we are on the edit screen of a specific custom post type.
+		if ( 'owc_ok_datalayer' === $screen->post_type && 'post' === $screen->base ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Show the datalayer metabox.
+	 *
+	 * @return bool
+	 */
+	public static function show_datalayer_metabox() {
+		$correct_cmb2_screen = self::get_correct_cmb2_screen();
+
+		if ( ! $correct_cmb2_screen ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Show the title mapping metabox.
 	 *
 	 * @param \CMB2 $cmb The CMB2 object.
@@ -412,6 +477,12 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_title_mapping_metabox( $cmb ) {
+		$correct_cmb2_screen = self::get_correct_cmb2_screen();
+
+		if ( ! $correct_cmb2_screen ) {
+			return false;
+		}
+
 		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
@@ -427,6 +498,12 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_field_mapping_metabox( $cmb ) {
+		$correct_cmb2_screen = self::get_correct_cmb2_screen();
+
+		if ( ! $correct_cmb2_screen ) {
+			return false;
+		}
+
 		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
@@ -442,6 +519,12 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_markers_metabox( $cmb ) {
+		$correct_cmb2_screen = self::get_correct_cmb2_screen();
+
+		if ( ! $correct_cmb2_screen ) {
+			return false;
+		}
+
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
@@ -457,6 +540,12 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_locations_metabox( $cmb ) {
+		$correct_cmb2_screen = self::get_correct_cmb2_screen();
+
+		if ( ! $correct_cmb2_screen ) {
+			return false;
+		}
+
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
