@@ -608,11 +608,9 @@ class Datalayers {
 			$repeater = [];
 
 			foreach ( $datalayer_properties as $key => $val ) {
-				$display_label = $key;
-
 				$repeater[] = [
 					'field_label'         => $key,
-					'field_display_label' => $display_label,
+					'field_display_label' => $key,
 					'field_show'          => false,
 				];
 			}
