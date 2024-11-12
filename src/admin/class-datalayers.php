@@ -173,30 +173,6 @@ class Datalayers {
 			]
 		);
 
-		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
-
-		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
-
-		if ( empty( $source_fields ) ) {
-			return;
-		}
-
-		$source_fields = array_map(
-			function ( $field ) {
-				return '{' . $field . '}';
-			},
-			$source_fields
-		);
-
-		$cmb = new_cmb2_box(
-			[
-				'id'           => 'title_field_mapping_metabox',
-				'title'        => __( 'Title field mapping', 'openkaarten-base' ),
-				'object_types' => [ 'owc_ok_datalayer' ],
-				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
-			]
-		);
-
 		$cmb = new_cmb2_box(
 			[
 				'id'           => 'title_field_mapping_metabox',
@@ -204,6 +180,17 @@ class Datalayers {
 				'object_types' => [ 'owc_ok_datalayer' ],
 				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_title_mapping_metabox' ],
 			]
+		);
+
+		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
+
+		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
+
+		$source_fields = array_map(
+			function ( $field ) {
+				return '{' . $field . '}';
+			},
+			$source_fields
 		);
 
 		$cmb->add_field(
@@ -730,7 +717,21 @@ class Datalayers {
 	 * @return array
 	 */
 	public static function get_datalayer_source_fields( $object_id ) {
-		$source_fields = [];
+		// First try to retrieve the source fields from the postmeta.
+		$source_fields = get_post_meta( $object_id, 'source_fields', true );
+
+		if ( ! empty( $source_fields ) ) {
+			// Get all field labels from the source_fields array.
+			$source_fields = array_map(
+				function ( $field ) {
+					return $field['field_label'];
+				},
+				$source_fields
+			);
+
+			return $source_fields;
+		}
+
 		if ( 'fileinput' === self::$datalayer_type ) {
 			$source_fields = self::cmb2_get_source_fields( $object_id );
 		} elseif ( 'url' === self::$datalayer_type ) {
