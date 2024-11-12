@@ -21,7 +21,7 @@
         },
         {
             "type": "git",
-            "url": "git@bitbucket.org:acato/openkaarten-base-functions.git"
+            "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git"
         }
     ],
     "require" : {
