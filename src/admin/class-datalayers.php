@@ -32,6 +32,13 @@ class Datalayers {
 	private static $datalayer_type;
 
 	/**
+	 * The datalayer URL.
+	 *
+	 * @var string
+	 */
+	private static $datalayer_url;
+
+	/**
 	 * The singleton instance of this class.
 	 *
 	 * @access private
@@ -184,6 +191,19 @@ class Datalayers {
 		}
 
 		self::$datalayer_type = get_post_meta( self::$cmb_object_id, 'datalayer_type', true );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+		if ( ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) ) ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+			self::$datalayer_type = sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) );
+		}
+
+		self::$datalayer_url = get_post_meta( self::$cmb_object_id, 'datalayer_url', true );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+		if ( ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_url'] ) ) ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+			self::$datalayer_url = sanitize_text_field( wp_unslash( $_POST['datalayer_url'] ) );
+		}
 
 		$source_fields = self::get_datalayer_source_fields( self::$cmb_object_id );
 
@@ -592,6 +612,9 @@ class Datalayers {
 				break;
 		}
 
+		// Convert the data to GeoJSON, just in case it is not already.
+		$file_contents = Importer::convert_data_to_geojson( $file_contents );
+
 		try {
 			$data = geoPHP::load( $file_contents );
 
@@ -726,12 +749,10 @@ class Datalayers {
 	/**
 	 * Fetch the data from an external source URL.
 	 *
-	 * @param int|string $object_id The object ID.
-	 *
 	 * @return mixed
 	 */
-	public static function fetch_datalayer_url_data( $object_id ) {
-		$url      = get_post_meta( $object_id, 'datalayer_url', true );
+	public static function fetch_datalayer_url_data() {
+		$url      = self::$datalayer_url;
 		$response = wp_remote_get( $url );
 
 		if ( is_wp_error( $response ) ) {
@@ -784,6 +805,9 @@ class Datalayers {
 
 				break;
 		}
+
+		// Convert the data to GeoJSON, just in case it is not already.
+		$data = Importer::convert_data_to_geojson( $data );
 
 		$source_fields = [];
 
