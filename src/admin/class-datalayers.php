@@ -25,20 +25,6 @@ class Datalayers {
 	private static $datalayer_type;
 
 	/**
-	 * The datalayer properties.
-	 *
-	 * @var string
-	 */
-	private static $datalayer_properties;
-
-	/**
-	 * The datalayer URL data.
-	 *
-	 * @var \geoPHP\Geometry\Geometry
-	 */
-	private static $datalayer_url_data;
-
-	/**
 	 * The singleton instance of this class.
 	 *
 	 * @access private
@@ -185,7 +171,7 @@ class Datalayers {
 		self::$datalayer_type = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
 
 		$source_fields = self::get_datalayer_source_fields( $cmb->object_id() );
-		
+
 		$source_fields = array_map(
 			function ( $field ) {
 				return '{' . $field . '}';
@@ -492,9 +478,10 @@ class Datalayers {
 		if ( 'cmb2_field_no_override_val' !== $value ) {
 			return $value;
 		}
-		$data = get_post_meta( $object_id, 'source_fields', true );
 
-		if ( $data ) {
+		$source_fields = get_post_meta( $object_id, 'source_fields', true );
+
+		if ( $source_fields ) {
 			return $value;
 		}
 
@@ -508,35 +495,55 @@ class Datalayers {
 				$file = get_attached_file( $datalayer_file );
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
 				$file_contents = file_get_contents( $file );
-				$data          = geoPHP::load( $file_contents );
-
-				// Get properties from the data in the components.
-				if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
-					return $value;
-				}
-
-				$data_array = $data->getComponents()[0]->getData();
 
 				break;
 			case 'url':
-				$data_array = self::fetch_datalayer_url_properties( $object_id );
+				$file_contents = self::fetch_datalayer_url_data( $object_id );
 
 				break;
 		}
 
-		$repeater = [];
+		try {
+			$data = geoPHP::load( $file_contents );
 
-		foreach ( $data_array as $key => $val ) {
-			$display_label = $key;
+			if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
+				return $value;
+			}
 
-			$repeater[] = [
-				'field_label'         => $key,
-				'field_display_label' => $display_label,
-				'field_show'          => false,
-			];
+			$datalayer_properties = $data->getComponents()[0]->getData();
+
+			if ( empty( $datalayer_properties ) ) {
+				return $value;
+			}
+
+			$repeater = [];
+
+			foreach ( $datalayer_properties as $key => $val ) {
+				$display_label = $key;
+
+				$repeater[] = [
+					'field_label'         => $key,
+					'field_display_label' => $display_label,
+					'field_show'          => false,
+				];
+			}
+
+			return $repeater;
+		} catch ( IOException $e ) {
+			// Add error message via admin notice.
+			add_action(
+				'admin_notices',
+				function () use ( $e ) {
+					?>
+					<div class="notice notice-error">
+						<p><?php echo esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ); ?></p>
+					</div>
+					<?php
+				}
+			);
+
+			return $value;
 		}
-
-		return $repeater;
 	}
 
 	/**
@@ -654,62 +661,6 @@ class Datalayers {
 	}
 
 	/**
-	 * Fetch the data from an external source URL. Parse the data and return the properties.
-	 *
-	 * @param int|string $object_id The object ID.
-	 *
-	 * @return array
-	 */
-	public static function fetch_datalayer_url_properties( $object_id ) {
-		// Check if properties are set in the static variable.
-		if ( self::$datalayer_properties ) {
-			return self::$datalayer_properties;
-		}
-
-		$url      = get_post_meta( $object_id, 'datalayer_url', true );
-		$response = wp_remote_get( $url );
-
-		if ( is_wp_error( $response ) ) {
-			return [];
-		}
-
-		$body = self::fetch_datalayer_url_data( $object_id );
-
-		if ( ! $body ) {
-			return [];
-		}
-
-		// Get properties from the data in the components.
-		try {
-			$data = geoPHP::load( $body );
-		} catch ( IOException $e ) {
-			// Add error message via admin notice.
-			add_action(
-				'admin_notices',
-				function () use ( $e ) {
-					?>
-					<div class="notice notice-error">
-						<p><?php echo esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ); ?></p>
-					</div>
-					<?php
-				}
-			);
-
-			return [];
-		}
-
-		if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
-			return [];
-		}
-
-		$datalayer_properties = $data->getComponents()[0]->getData();
-
-		self::$datalayer_properties = $datalayer_properties;
-
-		return $datalayer_properties;
-	}
-
-	/**
 	 * Get the source fields from the datalayer URL.
 	 *
 	 * @param int|string $object_id The object ID.
@@ -732,54 +683,48 @@ class Datalayers {
 			return $source_fields;
 		}
 
-		if ( 'fileinput' === self::$datalayer_type ) {
-			$source_fields = self::cmb2_get_source_fields( $object_id );
-		} elseif ( 'url' === self::$datalayer_type ) {
-			// Retrieve content from URL and get the source fields.
-			$url_data = self::fetch_datalayer_url_properties( $object_id );
+		// If no source fields are set, get the source fields from the datalayer file.
+		switch ( self::$datalayer_type ) {
+			case 'fileinput':
+			default:
+				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
+				$data = file_get_contents( $file );
 
-			$source_fields = [];
-			if ( ! empty( $url_data ) ) {
-				foreach ( $url_data as $key => $val ) {
-					if ( is_array( $val ) || is_object( $val ) ) {
-						continue;
-					}
-					$source_fields[] = $key;
-				}
-			}
-		}
+				break;
+			case 'url':
+				$data = self::fetch_datalayer_url_data( $object_id );
 
-		return $source_fields;
-	}
-
-	/**
-	 * Get the source fields from the datalayer file.
-	 *
-	 * @param int|string $object_id The object ID.
-	 *
-	 * @return array
-	 */
-	public static function cmb2_get_source_fields( $object_id ) {
-		// Get source fields from the datalayer file.
-		$datalayer_file = get_post_meta( $object_id, 'datalayer_file_id', true );
-		if ( ! $datalayer_file ) {
-			return [];
-		}
-
-		$file = get_attached_file( $datalayer_file );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-		$data = file_get_contents( $file );
-		$geom = geoPHP::load( $data );
-
-		if ( ! $geom->getComponents() && ! $geom->getComponents()[0] ) {
-			return [];
+				break;
 		}
 
 		$source_fields = [];
-		if ( $geom->getComponents()[0]->getData() ) {
-			foreach ( $geom->getComponents()[0]->getData() as $key => $val ) {
-				$source_fields[] = $key;
+
+		// Check if data is valid GeoJSON and if we can parse it. If not, a IOException will be thrown.
+		try {
+			$geom = geoPHP::load( $data );
+
+			if ( ! $geom->getComponents() && ! $geom->getComponents()[0] ) {
+				return [];
 			}
+
+			if ( $geom->getComponents()[0]->getData() ) {
+				foreach ( $geom->getComponents()[0]->getData() as $key => $val ) {
+					$source_fields[] = $key;
+				}
+			}
+		} catch ( IOException $e ) {
+			// Add error message via admin notice.
+			add_action(
+				'admin_notices',
+				function () use ( $e ) {
+					?>
+					<div class="notice notice-error">
+						<p><?php echo esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ); ?></p>
+					</div>
+					<?php
+				}
+			);
 		}
 
 		return $source_fields;
