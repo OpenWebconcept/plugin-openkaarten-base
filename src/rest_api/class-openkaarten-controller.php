@@ -9,6 +9,7 @@
 
 namespace Openkaarten_Base_Plugin\Rest_Api;
 
+use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
 use Openkaarten_Base_Plugin\Admin\Helper;
 use Openkaarten_Base_Plugin\Admin\Importer;
@@ -61,15 +62,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	private function __construct() {
 		add_action( 'init', [ $this, 'init' ] );
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
-		add_filter(
-			'rest_pre_serve_request',
-			[
-				'Openkaarten_Base_Plugin\Rest_Api\Openkaarten_Controller',
-				'rest_change_output_format',
-			],
-			10,
-			4
-		);
 	}
 
 	/**
@@ -257,6 +249,17 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$post = get_post( $id );
 		if ( ! $post ) {
 			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.', 'openkaarten-base' ), [ 'status' => 404 ] );
+		}
+
+		// Check if output format exists in the processor types.
+		$output_format = $request['output_format'];
+		if ( ! empty( $output_format ) ) {
+			$processor_types        = geoPHP::getAdapterMap();
+			$processor_types_string = implode( ', ', array_keys( $processor_types ) );
+			if ( ! isset( $processor_types[ $output_format ] ) ) {
+				// translators: %s: List of valid output formats.
+				return new \WP_Error( 'rest_post_invalid_output_format', sprintf( __( 'Invalid output format. Use one of the following output formats: %s', 'openkaarten-base' ), $processor_types_string ), [ 'status' => 404 ] );
+			}
 		}
 
 		$response = $this->prepare_item_for_response( $post, $request );
@@ -520,6 +523,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 * @return array|string The item data.
 	 */
 	public function prepare_item_for_response( $item, $request ) {
+		$output_format = $request['output_format'] ?? 'geojson';
+
 		// Get all locations which are linked to this dataset.
 		$location_args = [
 			'post_type'      => 'owc_ok_location',
@@ -554,13 +559,15 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			'features' => $locations,
 		];
 
-		if ( ! isset( $request['output_format'] ) || 'json' === $request['output_format'] || 'geojson' === $request['output_format'] ) {
-			return $item_data;
+		$item_data = wp_json_encode( $item_data );
+
+		try {
+			$geom = geoPHP::load( $item_data );
+
+			return $geom->out( $output_format );
+		} catch ( IOException $e ) {
+			return [];
 		}
-
-		$geom = geoPHP::load( wp_json_encode( $item_data ) );
-
-		return $geom->out( $request['output_format'] );
 	}
 
 	/**
@@ -639,7 +646,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 * @return bool Whether the request has already been served.
 	 */
 	public static function rest_change_output_format( $served, $result, $request, $server ) {
-
 		// Bail if the result is not an instance of WP_REST_Response.
 		if ( ! $result instanceof \WP_REST_Response ) {
 			return $served;
@@ -650,7 +656,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			return $served;
 		}
 
-		switch ( strtolower( $request['output_format'] ) ) {
+		switch ( $output_format ) {
 			case 'kml':
 				$output_format = 'application/vnd.google-earth.kml+xml';
 				break;
