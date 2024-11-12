@@ -183,27 +183,35 @@ class Cmb2 {
 					continue;
 				}
 
-				$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
-				$bbox = $geom->getBBox();
+				try {
+					$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
 
-				$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
-				$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
-				$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
-				$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
+					$bbox = $geom->getBBox();
 
-				// Get average lat and long for the center of the map.
-				$center_lat  = ( $min_lat + $max_lat ) / 2;
-				$center_long = ( $min_long + $max_long ) / 2;
+					$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
+					$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
+					$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
+					$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
 
-				$title           = get_the_title( $location->ID );
-				$location_marker = Locations::get_location_marker( $object_id, $location->ID );
+					// Get average lat and long for the center of the map.
+					$center_lat  = ( $min_lat + $max_lat ) / 2;
+					$center_long = ( $min_long + $max_long ) / 2;
 
-				$locations[] = [
-					'feature' => $geometry_array,
-					'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
-					'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
-					'color'   => $location_marker['color'],
-				];
+					$title           = get_the_title( $location->ID );
+					$location_marker = Locations::get_location_marker( $object_id, $location->ID );
+
+					$locations[] = [
+						'feature' => $geometry_array,
+						'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
+						'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
+						'color'   => $location_marker['color'],
+					];
+
+				} catch ( \Exception $e ) {
+					// Add error message via admin notice.
+					echo esc_html__( 'The geometry is not valid and can\'t be parsed.', 'openkaarten-base' );
+					return;
+				}
 			}
 		}
 
