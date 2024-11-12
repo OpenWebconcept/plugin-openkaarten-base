@@ -187,15 +187,6 @@ class Datalayers {
 			);
 		}
 
-		$cmb = new_cmb2_box(
-			[
-				'id'           => 'title_field_mapping_metabox',
-				'title'        => __( 'Title field mapping', 'openkaarten-base' ),
-				'object_types' => [ 'owc_ok_datalayer' ],
-				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_title_mapping_metabox' ],
-			]
-		);
-
 		$cmb->add_field(
 			[
 				'name'       => __( 'Title field mapping', 'openkaarten-base' ),
