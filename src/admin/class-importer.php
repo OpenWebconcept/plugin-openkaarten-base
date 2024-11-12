@@ -289,6 +289,9 @@ class Importer {
 	 */
 	public static function convert_data_to_geojson( $data ) {
 
+		// Return data because it's not working properly yet.
+		return $data;
+
 		$posts = json_decode( $data, true );
 
 		// Check if type is FeatureCollection.
