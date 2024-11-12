@@ -203,17 +203,24 @@ class Importer {
 		}
 
 		if ( count( $components ) ) {
-			$locations = get_posts(
-				[
-					'posts_per_page' => -1,
-					'fields'         => 'ids',
-					'post_type'      => 'owc_ok_location',
-					// phpcs:ignore WordPress.DB.SlowDBQuery -- We need to query for the locations.
-					'meta_key'       => 'location_datalayer_id',
-					// phpcs:ignore WordPress.DB.SlowDBQuery -- We need to query for the locations.
-					'meta_value'     => $post_id,
-				]
+			global $wpdb;
+
+			// Create a custom query to get the location ID's, where the location_datalayer_id is equal to the post ID.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
+			$locations = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT p.ID FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
+            WHERE p.post_type = 'owc_ok_location'
+              AND p.post_status = 'publish'
+              AND pm2.meta_key = 'location_datalayer_id'
+              AND pm2.meta_value = %s
+            ORDER BY p.post_title ASC",
+					$post_id
+				)
 			);
+
 			foreach ( $locations as $location ) {
 				wp_delete_post( $location, true );
 			}
