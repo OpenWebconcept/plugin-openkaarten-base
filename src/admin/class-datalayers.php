@@ -189,7 +189,7 @@ class Datalayers {
 
 		// Stop here if we can't get the source fields.
 		if ( empty( $source_fields ) ) {
-			return;
+			$source_fields = [ 'title' ];
 		}
 
 		$source_fields = array_map(
