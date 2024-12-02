@@ -612,9 +612,6 @@ class Datalayers {
 				break;
 		}
 
-		// Convert the data to GeoJSON, just in case it is not already.
-		$file_contents = Importer::convert_data_to_geojson( $file_contents );
-
 		try {
 			$data = geoPHP::load( $file_contents );
 
@@ -805,9 +802,6 @@ class Datalayers {
 
 				break;
 		}
-
-		// Convert the data to GeoJSON, just in case it is not already.
-		$data = Importer::convert_data_to_geojson( $data );
 
 		$source_fields = [];
 

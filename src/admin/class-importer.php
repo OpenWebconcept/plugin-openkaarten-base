@@ -175,9 +175,6 @@ class Importer {
 				break;
 		}
 
-		// Convert the data to GeoJSON, just in case it is not already.
-		$data = self::convert_data_to_geojson( $data );
-
 		// Check if data is valid GeoJSON and if we can parse it. If not, a IOException will be thrown.
 		try {
 			$geom = geoPHP::load( $data );
@@ -278,56 +275,5 @@ class Importer {
 		$geom = Conversion::convert_coordinates( $geom, 'WGS84' );
 
 		return wp_json_encode( $geom );
-	}
-
-	/**
-	 * Convert the data to GeoJSON.
-	 *
-	 * @param string $data The data.
-	 *
-	 * @return string The GeoJSON data.
-	 */
-	public static function convert_data_to_geojson( $data ) {
-
-		// Return data because it's not working properly yet.
-		return $data;
-
-		$posts = json_decode( $data, true );
-
-		// Check if type is FeatureCollection.
-		if ( 'FeatureCollection' === $posts['type'] ) {
-			return $data;
-		}
-
-		// Initialize the GeoJSON FeatureCollection structure.
-		$geojson = [
-			'type'     => 'FeatureCollection',
-			'features' => [],
-		];
-
-		// Loop through the posts and convert each one to a GeoJSON feature.
-		foreach ( $posts as $post ) {
-			if ( isset( $post['geometry'] ) ) {
-				$feature = [
-					'type'       => 'Feature',
-					'geometry'   => $post['geometry'],
-					'properties' => [
-						'title' => $post['title']['rendered'],
-					],
-				];
-
-				// Add all the other properties.
-				foreach ( $post as $key => $value ) {
-					if ( 'geometry' === $key || 'title' === $key ) {
-						continue;
-					}
-					$feature['properties'][ $key ] = $value;
-				}
-
-				$geojson['features'][] = $feature;
-			}
-		}
-
-		return wp_json_encode( $geojson, JSON_PRETTY_PRINT );
 	}
 }
