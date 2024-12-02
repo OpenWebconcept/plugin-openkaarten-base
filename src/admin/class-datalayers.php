@@ -235,17 +235,19 @@ class Datalayers {
 				'id'           => 'tooltip-metabox',
 				'title'        => __( 'Tooltip configuration', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
 			]
 		);
 
 		$cmb->add_field(
 			[
-				'id'      => 'tooltip',
-				'type'    => 'flexible',
-				'options' => [
+				'id'         => 'tooltip',
+				'type'       => 'flexible',
+				'options'    => [
 					'sortable' => true,
 				],
-				'layouts' => [
+				'show_on_cb' => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
+				'layouts'    => [
 					'image'  => [
 						'title'  => __( 'Image', 'openkaarten-base' ),
 						'fields' => [
