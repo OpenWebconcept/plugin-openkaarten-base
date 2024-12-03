@@ -272,7 +272,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git",
-                "reference": "2487bcbd2124934488845a4d19cc61e727d5a9c0"
+                "reference": "7ebb2b02f6499343e436536ebaca678710d39189"
             },
             "require": {
                 "composer/installers": "~1.0"
@@ -299,7 +299,7 @@
             ],
             "description": "Adds global functions for OpenKaarten Base and OpenKaarten add-on plugins.",
             "homepage": "https://www.acato.nl",
-            "time": "2024-11-04T11:58:34+00:00"
+            "time": "2024-12-03T11:55:40+00:00"
         },
         {
             "name": "acato/wp-pre-commit-hook",

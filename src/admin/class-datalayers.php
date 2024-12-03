@@ -84,19 +84,20 @@ class Datalayers {
 			self::$cmb_object_id = intval( $_GET['post'] );
 		}
 
+		add_action( 'init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'register_datalayer_post_type' ] );
+		add_action( 'wp_trash_post', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'delete_datalayer_locations' ], 10, 1 );
+
 		// Check the post type of the CMB object, otherwise this code is also executed on other post types.
 		$post_type = get_post_type( self::$cmb_object_id );
 		if ( $post_type && 'owc_ok_datalayer' !== $post_type ) {
 			return;
 		}
 
-		add_action( 'init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'register_datalayer_post_type' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_datalayer_metaboxes' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
 		add_action( 'cmb2_save_post_fields', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_save_datalayer_fields' ], 10, 4 );
-		add_action( 'wp_trash_post', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'delete_datalayer_locations' ], 10, 1 );
 	}
 
 	/**
