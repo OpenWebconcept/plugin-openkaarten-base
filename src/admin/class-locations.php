@@ -82,12 +82,9 @@ class Locations {
 			$post_id = sanitize_text_field( wp_unslash( $_POST['post_ID'] ) );
 		}
 
-		// Get post type.
-		$post_type = get_post_type( $post_id );
-
 		self::cmb2_location_datalayer_field();
 
-		if ( 'owc_ok_location' !== $post_type ) {
+		if ( 'owc_ok_location' !== get_post_type( $post_id ) ) {
 			return;
 		}
 
@@ -370,6 +367,10 @@ class Locations {
 	 * @return void
 	 */
 	public static function save_geometry_object( $post_id ) {
+		if ( wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
 		// Check nonce.
 		if ( ! isset( $_POST['nonce_CMB2phplocation_geometry_metabox'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce_CMB2phplocation_geometry_metabox'] ) ), 'nonce_CMB2phplocation_geometry_metabox' ) ) {
 			return;

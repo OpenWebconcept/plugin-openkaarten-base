@@ -34,4 +34,24 @@ class Helper {
 
 		return self::$instance;
 	}
+
+	/**
+	 * Add an error message to the admin.
+	 *
+	 * @param string $message The error message.
+	 *
+	 * @return void
+	 */
+	public static function add_error_message( $message ) {
+		add_action(
+			'admin_notices',
+			function () use ( $message ) {
+				?>
+			<div class="notice notice-error is-dismissible">
+				<p><?php echo esc_html( $message ); ?></p>
+			</div>
+				<?php
+			}
+		);
+	}
 }

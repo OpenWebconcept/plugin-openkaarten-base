@@ -168,8 +168,13 @@ class Cmb2 {
 					];
 				}
 
-				if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
-					continue;
+				// Check if type of geometry is GeometryCollection.
+				if ( 'GeometryCollection' === $geometry_array['geometry']['type'] ) {
+					if ( empty( $geometry_array['geometries'] ) || empty( $geometry_array['geometries'][0]['coordinates'] ) ) {
+						continue;
+					}
+				} elseif ( empty( $geometry_array['geometry']['coordinates'] ) ) {
+						continue;
 				}
 
 				try {
