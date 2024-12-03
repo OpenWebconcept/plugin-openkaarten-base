@@ -34,7 +34,9 @@ class Importer {
 	 */
 	private function __construct() {
 		add_action( 'add_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'add_post_meta' ], 10, 3 );
-		add_action( 'update_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'update_post_meta' ], 10, 4 );
+		add_action( 'update_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'update_post_meta' ], 5, 4 );
+		add_action( 'admin_init', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'handle_sync_import_file' ] );
+		add_action( 'admin_notices', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'show_sync_notice' ] );
 	}
 
 	/**
@@ -103,6 +105,12 @@ class Importer {
 			return;
 		}
 
+		// Skip import if URL type is live instead of import.
+		$datalayer_url_type = get_post_meta( $post_id, 'datalayer_url_type', true );
+		if ( 'live' === $datalayer_url_type ) {
+			return;
+		}
+
 		// Check nonce validation.
 		if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
 			return;
@@ -113,8 +121,22 @@ class Importer {
 		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- We need to read the source fields.
-		$source_fields          = wp_unslash( $_POST['source_fields'] );
+		$source_fields = wp_unslash( $_POST['source_fields'] );
+		self::update_field_mapping( $post_id, $source_fields );
+		self::import_locations( $post_id, $meta_value );
+	}
+
+	/**
+	 * Update the field mapping.
+	 *
+	 * @param int   $post_id       The post ID.
+	 * @param array $source_fields The source fields.
+	 *
+	 * @return bool
+	 */
+	public static function update_field_mapping( $post_id, $source_fields ) {
 		$original_source_fields = get_post_meta( $post_id, 'source_fields', true ) ?: [];
+
 		if ( ! empty( $original_source_fields ) ) {
 			foreach ( $original_source_fields as $field ) {
 				$key = array_search( $field['field_label'], array_column( $source_fields, 'field_label' ), true );
@@ -146,18 +168,18 @@ class Importer {
 			}
 		}
 
-		self::import_locations( $post_id, $meta_value );
+		return true;
 	}
 
 	/**
 	 * Import the locations.
 	 *
 	 * @param int    $post_id    The post ID.
-	 * @param string $meta_value The meta value.
+	 * @param string $title_field_value The title field value.
 	 *
-	 * @return void
+	 * @return bool
 	 */
-	public static function import_locations( $post_id, $meta_value = false ) {
+	public static function import_locations( $post_id, $title_field_value ) {
 		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
 
 		switch ( $datalayer_type ) {
@@ -178,12 +200,22 @@ class Importer {
 		try {
 			$geom = geoPHP::load( $data );
 
-			$components = $geom->getComponents();
+			// Check if the geo response is a single Geometry or a GeometryCollection.
+			if ( 'GeometryCollection' === $geom->geometryType() ) {
+				$components = $geom->getComponents();
+			} else {
+				$components = [ $geom ];
+			}
 
 			// Catch all the fields in brackets from the title fields and replace them with the actual values.
-			$title_fields = $meta_value;
+			$title_fields = $title_field_value;
 			if ( empty( $title_fields ) ) {
 				$title_fields = '{' . array_key_first( $components[0]->getData() ) . '}';
+			}
+
+			// If still empty, look for a title field.
+			if ( empty( $title_fields ) ) {
+				$title_fields = '{title}';
 			}
 
 			if ( count( $components ) ) {
@@ -212,14 +244,7 @@ class Importer {
 				foreach ( $components as $component ) {
 					$properties = $component->getData();
 
-					$title = $title_fields;
-					foreach ( $properties as $key => $value ) {
-						if ( is_array( $value ) || is_object( $value ) ) {
-							continue;
-						}
-						$value = is_null( $value ) ? '' : $value;
-						$title = str_replace( '{' . $key . '}', $value, $title );
-					}
+					$title = self::create_title_from_mapping( $properties, $title_fields );
 
 					$location    = [
 						'post_title'  => $title,
@@ -242,6 +267,9 @@ class Importer {
 					$geometry = self::process_geometry( $component );
 
 					update_post_meta( $location_id, 'geometry', wp_slash( $geometry ) );
+
+					// Set date of last import.
+					update_post_meta( $post_id, 'datalayer_last_import', current_time( 'mysql' ) );
 				}
 			}
 		} catch ( IOException $e ) {
@@ -257,8 +285,49 @@ class Importer {
 				}
 			);
 
-			return;
+			return false;
 		}
+	}
+
+	/**
+	 * Create the title from the mapping.
+	 * This function replaces the fields in the title with the actual values.
+	 *
+	 * @param array  $properties The properties.
+	 * @param string $title      The title.
+	 *
+	 * @return string The title.
+	 */
+	public static function create_title_from_mapping( $properties, $title ) {
+		if ( empty( $properties ) ) {
+			return $title;
+		}
+
+		foreach ( $properties as $key => $value ) {
+			// Check if the key is title, then also look for title > rendered value.
+			if ( 'title' === $key ) {
+				if ( is_array( $value ) && isset( $value['rendered'] ) ) {
+					$value = $value['rendered'];
+				}
+			}
+
+			if ( is_object( $value ) ) {
+				$value = (array) $value;
+			}
+
+			if ( is_array( $value ) ) {
+				// Find the first key that has a value.
+				$second_key = array_key_first( $value );
+
+				// Look for the value if it's a multidimensional array.
+				$value = $value[ $second_key ];
+			}
+
+			$value = is_null( $value ) ? '' : $value;
+			$title = str_replace( '{' . $key . '}', $value, $title );
+		}
+
+		return $title;
 	}
 
 	/**
@@ -274,5 +343,60 @@ class Importer {
 		$geom = Conversion::convert_coordinates( $geom, 'WGS84' );
 
 		return wp_json_encode( $geom );
+	}
+
+	/**
+	 * Handle the sync import file.
+	 *
+	 * @return void
+	 */
+	public static function handle_sync_import_file() {
+		// Check if the form has been submitted by looking for our hidden input.
+		if ( isset( $_POST['sync_import_file'] ) && isset( $_POST['submit_sync_import_file'] ) ) {
+
+			// Check nonce validation.
+			if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
+				return;
+			}
+
+			// Verify the user has permission to perform this action.
+			if ( ! current_user_can( 'edit_posts' ) ) {
+				return;
+			}
+
+			// Get the post ID from the hidden input.
+			$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : null;
+
+			if ( ! $post_id ) {
+				return;
+			}
+
+			// Perform the import.
+			$title_field_value = get_post_meta( $post_id, 'title_field_mapping', true );
+			$response_import   = self::import_locations( $post_id, $title_field_value );
+
+			// Redirect to avoid re-submission on page reload.
+			if ( $response_import && isset( $_POST['redirect_url'] ) ) {
+				wp_safe_redirect( add_query_arg( 'synced', '1', sanitize_url( wp_unslash( $_POST['redirect_url'] ) ) ) );
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * Show the sync notice.
+	 *
+	 * @return void
+	 */
+	public static function show_sync_notice() {
+		$screen = get_current_screen();
+
+		// Check if on post edit screen and if 'synced' parameter is set.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- We need to check the $_GET parameter.
+		if ( 'post' === $screen->base && isset( $_GET['synced'] ) ) {
+			echo '<div class="notice notice-success is-dismissible">
+	            <p>' . esc_html__( 'Sync completed successfully!', 'openkaarten-base' ) . '</p>
+	        </div>';
+		}
 	}
 }

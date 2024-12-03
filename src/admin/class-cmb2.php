@@ -47,6 +47,7 @@ class Cmb2 {
 		add_action( 'post_submitbox_start', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'add_nonce_field' ] );
 		add_action( 'cmb2_render_markerpreview', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_markerpreview_field_type' ], 10, 5 );
 		add_action( 'cmb2_render_openstreetmap', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_openstreetmap_field_type' ], 10, 5 );
+		add_action( 'cmb2_render_import_sync', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_import_sync_field_type' ], 10, 5 );
 	}
 
 	/**
@@ -109,11 +110,27 @@ class Cmb2 {
 	 */
 	public static function cmb2_render_openstreetmap_field_type( $field, $escaped_value, $object_id ) {
 
-		$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
+		$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true );
 
-		switch ( $datalayer_type ) {
-			case 'fileinput':
-			case 'url':
+		switch ( $datalayer_url_type ) {
+			case 'live':
+				// Retrieve the objects from the source file.
+				$datalayer_url = get_post_meta( $object_id, 'datalayer_url', true );
+
+				$datalayer_locations = wp_remote_get( $datalayer_url );
+				$datalayer_locations = json_decode( wp_remote_retrieve_body( $datalayer_locations ), true );
+
+				$array_keys_to_look_for = [ 'data', 'results' ];
+				// Check if the data is an array with a key from the $array_keys_to_look_for and if so, use that data.
+				foreach ( $array_keys_to_look_for as $key ) {
+					if ( isset( $datalayer_locations[ $key ] ) ) {
+						$datalayer_locations = $datalayer_locations[ $key ];
+						break;
+					}
+				}
+
+				break;
+			case 'import':
 			default:
 				global $wpdb;
 
@@ -151,13 +168,27 @@ class Cmb2 {
 		$locations = [];
 		if ( $datalayer_locations ) {
 			foreach ( $datalayer_locations as $location ) {
-				// Set min and max values for the map.
-				$geometry_object = get_post_meta( $location->ID, 'geometry' );
+
+				$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true ) ? : 'import';
+
+				if ( 'import' === $datalayer_url_type ) {
+					$geometry_object = get_post_meta( $location->ID, 'geometry' );
+				} else {
+					$geometry_object = Helper::array_search_recursive( 'geometry', $location ) ? : false;
+				}
+
 				if ( ! $geometry_object ) {
 					continue;
 				}
 
-				$geometry_array = json_decode( $geometry_object[0], true );
+				if ( 'import' === $datalayer_url_type ) {
+					$geometry_array = json_decode( $geometry_object[0], true );
+					if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
+						continue;
+					}
+				} else {
+					$geometry_array = $geometry_object;
+				}
 
 				// Check if the geometry object has a type Feature wrapper or not.
 				if ( 'Feature' !== $geometry_array['type'] ) {
@@ -177,6 +208,10 @@ class Cmb2 {
 						continue;
 				}
 
+				// Set min and max values for the map.
+				$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
+				$bbox = $geom->getBBox();
+
 				try {
 					$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
 
@@ -192,11 +227,21 @@ class Cmb2 {
 					$center_long = ( $min_long + $max_long ) / 2;
 
 					$title           = get_the_title( $location->ID );
-					$location_marker = Locations::get_location_marker( $object_id, $location->ID );
+
+					// Set the content for the marker popup.
+					if ( 'import' === $datalayer_url_type ) {
+						$marker_content  = get_the_title( $location->ID ) . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>';
+						$location_marker = Locations::get_location_marker( $object_id, $location->ID );
+					} else {
+						$title_fields    = get_post_meta( $object_id, 'title_field_mapping', true );
+						$title           = Importer::create_title_from_mapping( $location, $title_fields );
+						$marker_content  = $title;
+						$location_marker = Locations::get_location_marker( $object_id, false, $location );
+					}
 
 					$locations[] = [
 						'feature' => $geometry_array,
-						'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
+						'content' => $marker_content,
 						'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
 						'color'   => $location_marker['color'],
 					];
@@ -226,5 +271,31 @@ class Cmb2 {
 		);
 
 		echo '<div id="map-base" class="map-base"></div>';
+	}
+
+	/**
+	 * Adds a custom field type for a button to sync or import data.
+	 *
+	 * @param  object $field             The CMB2_Field type object.
+	 * @param  mixed  $escaped_value     The value of this field passed through the escaping filter.
+	 * @param  int    $object_id         The ID of the object this field is saving to.
+	 *
+	 * @return void
+	 */
+	public function cmb2_render_import_sync_field_type( $field, $escaped_value, $object_id ) {
+		$last_updated = get_post_meta( $object_id, 'datalayer_last_import', true );
+
+		// Get URL of edit post page.
+		$edit_post_url = get_edit_post_link( $object_id );
+
+		echo '<form method="post" style="margin-top:10px;">
+                <input type="hidden" name="sync_import_file" value="1">
+                <input type="hidden" name="post_id" value="' . esc_attr( $object_id ) . '">
+                <input type="hidden" name="redirect_url" value="' . esc_attr( $edit_post_url ) . '">
+                <input type="submit" name="submit_sync_import_file" class="button button-primary button-large" value="' . esc_html__( 'Sync data', 'openkaarten-base' ) . '">
+            </form>';
+
+		// translators: %s is the last updated date.
+		echo '<p>' . sprintf( esc_html__( 'Last synced at: %s', 'openkaarten-base' ), esc_attr( $last_updated ) ) . '</p>';
 	}
 }

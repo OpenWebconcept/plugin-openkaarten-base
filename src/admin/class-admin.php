@@ -10,6 +10,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use WP_Rest_Cache_Plugin\Includes\Caching\Caching;
+
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -53,6 +55,8 @@ class Admin {
 
 		add_action( 'manage_owc_ok_location_posts_custom_column', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'location_posts_columns' ], 10, 2 );
 		add_filter( 'manage_owc_ok_location_posts_columns', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'manage_location_posts_columns' ] );
+
+		add_action( 'save_post', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_cache_for_specific_endpoints' ], 10, 1 );
 	}
 
 	/**
@@ -275,6 +279,43 @@ class Admin {
 					esc_html( $datalayer_name )
 				);
 			}
+		}
+	}
+
+	/**
+	 * Remove the cashed post from the cache.
+	 *
+	 * @param int $post_id The current post_id.
+	 *
+	 * @return void
+	 */
+	public function flush_cache_for_specific_endpoints( $post_id = null ) {
+		// Check if the post is saved or updated.
+		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! is_plugin_active( 'wp-rest-cache/wp-rest-cache.php' ) ) {
+			return;
+		}
+
+		// Check post type.
+		$post_type = get_post_type( $post_id );
+
+		switch ( $post_type ) {
+			case 'owc_ok_location':
+				// Get datalayer ID.
+				$datalayer_id = get_post_meta( $post_id, 'location_datalayer_id', true );
+
+				if ( ! $datalayer_id ) {
+					return;
+				}
+
+				Caching::get_instance()->delete_cache_by_endpoint( '%/owc/openkaarten/v1/datasets', Caching::FLUSH_LOOSE, true );
+				Caching::get_instance()->delete_cache_by_endpoint( '%/owc/openkaarten/v1/datasets/id/' . $datalayer_id, Caching::FLUSH_LOOSE, true );
+				break;
+			case 'owc_ok_datalayer':
+				Caching::get_instance()->delete_cache_by_endpoint( '%/owc/openkaarten/v1/datasets', Caching::FLUSH_LOOSE, true );
+				Caching::get_instance()->delete_cache_by_endpoint( '%/owc/openkaarten/v1/datasets/id/' . $post_id, Caching::FLUSH_LOOSE, true );
+				break;
+			default:
+				break;
 		}
 	}
 }

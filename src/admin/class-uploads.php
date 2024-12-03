@@ -54,7 +54,7 @@ class Uploads {
 	 * @var array[]
 	 */
 	public static $mimes = [
-		'geojson' => [ 'application/json', 'text/json', 'text/plain' ],
+		'geojson' => [ 'application/json', 'text/json', 'application/geo+json', 'text/plain' ],
 		'json'    => [ 'application/json', 'text/json', 'text/plain' ],
 		'kml'     => [ 'application/vnd.google-earth.kml+xml', 'application/xml', 'text/xml', 'text/plain' ],
 		'gml'     => [ 'application/gml+xml', 'application/xml', 'text/xml', 'text/plain' ],

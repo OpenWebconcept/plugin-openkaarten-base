@@ -71,6 +71,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			10,
 			4
 		);
+
+		add_filter( 'wp_rest_cache/allowed_endpoints', [ $this, 'wprc_add_caching_endpoint' ], 10, 1 );
 	}
 
 	/**
@@ -534,31 +536,60 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	public function prepare_item_for_response( $item, $request ) {
 		$output_format = $request['output_format'] ?? 'geojson';
 
+		$datalayer_url_type = get_post_meta( $item->ID, 'datalayer_url_type', true );
+
 		// Get all locations which are linked to this dataset.
-		$location_args = [
-			'post_type'      => 'owc_ok_location',
-			'posts_per_page' => - 1,
-			'orderby'        => 'title',
-			'order'          => 'ASC',
-			// phpcs:ignore WordPress.DB.SlowDBQuery -- This is a valid query.
-			'meta_query'     => [
-				'relation' => 'AND',
-				[
-					'key'   => 'location_datalayer_id',
-					'value' => $item->ID,
-				],
-			],
-		];
-
-		$posts_query  = new \WP_Query();
-		$query_result = $posts_query->query( $location_args );
-
 		$locations = [];
-		foreach ( $query_result as $post ) {
-			$location = $this->prepare_location_for_response( $post, $request, false );
-			if ( $location ) {
-				$locations[] = $location;
-			}
+
+		switch ( $datalayer_url_type ) {
+			case 'live':
+				// Retrieve the objects from the source file.
+				$datalayer_url = get_post_meta( $item->ID, 'datalayer_url', true );
+
+				$datalayer_locations = wp_remote_get( $datalayer_url );
+				$datalayer_locations = json_decode( wp_remote_retrieve_body( $datalayer_locations ), true );
+
+				// Check if the source file is an array with items or an object with a data key.
+				if ( ! isset( $datalayer_locations[0] ) ) {
+					// Check what the key is for the data by getting the first key.
+					$data_key            = array_keys( $datalayer_locations )[0];
+					$datalayer_locations = $datalayer_locations[ $data_key ];
+				}
+
+				foreach ( $datalayer_locations as $datalayer_location ) {
+					$location = $this->prepare_location_for_response( $datalayer_location, $request, 'live', $item->ID );
+					if ( $location ) {
+						$locations[] = $location;
+					}
+				}
+				break;
+			case 'import':
+			default:
+				$location_args = [
+					'post_type'      => 'owc_ok_location',
+					'posts_per_page' => - 1,
+					'orderby'        => 'title',
+					'order'          => 'ASC',
+					// phpcs:ignore WordPress.DB.SlowDBQuery -- This is a valid query.
+					'meta_query'     => [
+						'relation' => 'AND',
+						[
+							'key'   => 'location_datalayer_id',
+							'value' => $item->ID,
+						],
+					],
+				];
+
+				$posts_query  = new \WP_Query();
+				$query_result = $posts_query->query( $location_args );
+
+				foreach ( $query_result as $post ) {
+					$location = $this->prepare_location_for_response( $post, $request, 'import', $item->ID );
+					if ( $location ) {
+						$locations[] = $location;
+					}
+				}
+				break;
 		}
 
 		$item_data = [
@@ -587,23 +618,54 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 *
 	 * @param \WP_POST         $item The post object.
 	 * @param \WP_REST_Request $request Full details about the request.
+	 * @param string           $type The type of request.
+	 * @param int              $datalayer_id The dataset ID.
 	 *
 	 * @return array|false The item data.
 	 */
-	public function prepare_location_for_response( $item, $request ) {
+	public function prepare_location_for_response( $item, $request, $type = 'import', $datalayer_id = null ) {
 
-		$geometry_json = get_post_meta( $item->ID, 'geometry', true );
-		if ( ! $geometry_json ) {
-			return false;
+		// Retrieve the geometry based on the type of request.
+		switch ( $type ) {
+			case 'live':
+				$geometry_json = Helper::array_search_recursive( 'geometry', $item ) ? : false;
+
+				if ( ! $geometry_json ) {
+					return false;
+				}
+
+				$item_data['type']     = 'Feature';
+				$item_data['geometry'] = $geometry_json;
+
+				// Get dataset id param from URL.
+				$dataset_id = $datalayer_id;
+
+				// Add location title based on the title field mapping.
+				$title_fields   = get_post_meta( $datalayer_id, 'title_field_mapping', true );
+				$location_title = Importer::create_title_from_mapping( (array) $item, $title_fields );
+				break;
+			case 'import':
+			default:
+				$geometry_json = get_post_meta( $item->ID, 'geometry', true );
+
+				if ( ! $geometry_json ) {
+					return false;
+				}
+
+				$item_data       = json_decode( $geometry_json, true );
+				$item_data['id'] = $item->ID;
+				$item_data['title'] = get_the_title( $item->ID );
+
+				unset( $item_data['properties'] );
+
+				$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
+
+				// Add location title based on the post title.
+				$location_title = $item->post_title;
+				break;
 		}
 
-		$item_data          = json_decode( $geometry_json, true );
-		$item_data['id']    = $item->ID;
-		$item_data['title'] = get_the_title( $item->ID );
-
-		unset( $item_data['properties'] );
-
-		$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
+		$item_data['properties']['title'] = $location_title;
 
 		$search  = [];
 		$replace = [];
@@ -621,7 +683,11 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 					continue;
 				}
 
-				$item_data['properties'][ $source_field['field_display_label'] ] = $value;
+				if ( 'import' === $type ) {
+					$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
+				} elseif ( 'live' === $type ) {
+					$item_data['properties'][ $source_field['field_display_label'] ] = $item[ $source_field['field_label'] ];
+				}
 			}
 		}
 
@@ -636,14 +702,20 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		}
 
 		// Check if the post has a featured image and add it to the item data.
-		if ( get_the_post_thumbnail_url( $item->ID, 'large' ) ) {
-			$thumb_image                               = get_the_post_thumbnail_url( $item->ID, 'large' );
-			$thumb_id                                  = get_post_thumbnail_id( $item->ID );
-			$item_data['properties']['post_thumbnail'] = $this->create_image_output( $thumb_id, $thumb_image );
+		if ( 'import' === $type ) {
+			if ( get_the_post_thumbnail_url( $item->ID, 'large' ) ) {
+				$thumb_image                               = get_the_post_thumbnail_url( $item->ID, 'large' );
+				$thumb_id                                  = get_post_thumbnail_id( $item->ID );
+				$item_data['properties']['post_thumbnail'] = $this->create_image_output( $thumb_id, $thumb_image );
+			}
 		}
 
 		// Get marker information.
-		$item_marker                                = Locations::get_location_marker( $dataset_id, $item->ID );
+		if ( 'import' === $type ) {
+			$item_marker = Locations::get_location_marker( $dataset_id, $item->ID );
+		} else {
+			$item_marker = Locations::get_location_marker( $dataset_id, false, $item );
+		}
 		$item_data['properties']['marker']['color'] = $item_marker['color'];
 		$item_data['properties']['marker']['icon']  = Locations::get_location_marker_url( $item_marker['icon'] );
 
@@ -736,5 +808,20 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		];
 
 		return $output;
+	}
+
+	/**
+	 * Register endpoints to cache.
+	 *
+	 * @param array $allowed_endpoints Array of allowed endpoints.
+	 *
+	 * @return array
+	 */
+	public function wprc_add_caching_endpoint( $allowed_endpoints ) {
+		if ( ! isset( $allowed_endpoints['owc/openkaarten/v1'] ) ) {
+			$allowed_endpoints['owc/openkaarten/v1'][] = 'datasets';
+		}
+
+		return $allowed_endpoints;
 	}
 }
