@@ -190,7 +190,7 @@ class Datalayers {
 		// Check if datalayer type is set. If not, then check if the post is updated and get the datalayer type from the post.
 		self::$datalayer_type = get_post_meta( self::$cmb_object_id, 'datalayer_type', true );
 
-		if ( empty( self::$datalayer_type ) && ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) ) ) ) {
+		if ( empty( self::$datalayer_type ) && isset( $_POST['datalayer_type'] ) && ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) ) ) ) {
 			// Check nonce.
 			if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
 				return;
@@ -204,7 +204,7 @@ class Datalayers {
 		// Check if datalayer type is set. If not, then check if the post is updated and get the datalayer type from the post.
 		// If the datalayer type is set, then disable the field.
 		self::$datalayer_url = get_post_meta( self::$cmb_object_id, 'datalayer_url', true );
-		if ( empty( self::$datalayer_type ) && ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_url'] ) ) ) ) {
+		if ( empty( self::$datalayer_type ) && isset( $_POST['datalayer_url'] ) && ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_url'] ) ) ) ) {
 			// Check nonce.
 			if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
 				return;
