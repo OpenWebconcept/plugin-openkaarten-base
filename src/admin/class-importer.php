@@ -169,7 +169,7 @@ class Importer {
 
 				break;
 			case 'url':
-				$data = Datalayers::fetch_datalayer_url_data( $post_id );
+				$data = Datalayers::fetch_datalayer_url_data();
 
 				break;
 		}

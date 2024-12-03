@@ -84,6 +84,12 @@ class Datalayers {
 			self::$cmb_object_id = intval( $_GET['post'] );
 		}
 
+		// Check the post type of the CMB object, otherwise this code is also executed on other post types.
+		$post_type = get_post_type( self::$cmb_object_id );
+		if ( $post_type && 'owc_ok_datalayer' !== $post_type ) {
+			return;
+		}
+
 		add_action( 'init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'register_datalayer_post_type' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_datalayer_metaboxes' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
