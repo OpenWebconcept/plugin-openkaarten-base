@@ -57,8 +57,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 * @return void
 	 */
 	private function __construct() {
-		parent::__construct( 'owc_ok_datalayer' );
-
 		add_action( 'init', [ $this, 'init' ] );
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
 
