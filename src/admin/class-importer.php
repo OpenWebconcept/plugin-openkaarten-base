@@ -9,7 +9,6 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
-use geoPHP\Adapter\GeoJSON;
 use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
 use Openkaarten_Base_Plugin\Conversion;
