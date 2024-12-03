@@ -597,24 +597,42 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			return false;
 		}
 
-		$item_data       = json_decode( $geometry_json, true );
-		$item_data['id'] = $item->ID;
+		$item_data          = json_decode( $geometry_json, true );
+		$item_data['id']    = $item->ID;
+		$item_data['title'] = get_the_title( $item->ID );
 
 		unset( $item_data['properties'] );
 
 		$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
 
+		$search  = [];
+		$replace = [];
+
 		// Get all cmb2 fields for the dataset post type.
 		$source_fields = get_post_meta( $dataset_id, 'source_fields', true );
 		if ( ! empty( $source_fields ) ) {
 			foreach ( $source_fields as $source_field ) {
+				$value     = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
+				$search[]  = '{' . $source_field['field_label'] . '}';
+				$replace[] = $value;
+
 				// Include only fields that are set to show.
 				if ( ! isset( $source_field['field_show'] ) || 'on' !== $source_field['field_show'] ) {
 					continue;
 				}
 
-				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
+				$item_data['properties'][ $source_field['field_display_label'] ] = $value;
 			}
+		}
+
+		$tooltip = get_post_meta( $dataset_id, 'tooltip', true );
+		if ( $tooltip ) {
+			foreach ( $tooltip as &$layout ) {
+				foreach ( $layout as &$field ) {
+					$field = str_replace( $search, $replace, $field );
+				}
+			}
+			$item_data['properties']['tooltip'] = $tooltip;
 		}
 
 		// Check if the post has a featured image and add it to the item data.
