@@ -47,17 +47,6 @@ class Cmb2 {
 		add_action( 'post_submitbox_start', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'add_nonce_field' ] );
 		add_action( 'cmb2_render_markerpreview', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_markerpreview_field_type' ], 10, 5 );
 		add_action( 'cmb2_render_openstreetmap', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_openstreetmap_field_type' ], 10, 5 );
-		if ( class_exists( '\Openkaarten_Base_Functions\Openkaarten_Base_Functions' ) ) {
-			add_action(
-				'cmb2_render_geomap',
-				[
-					'Openkaarten_Base_Functions\Openkaarten_Base_Functions',
-					'cmb2_render_geomap_field_type',
-				],
-				10,
-				5
-			);
-		}
 	}
 
 	/**
