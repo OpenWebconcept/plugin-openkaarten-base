@@ -10,6 +10,7 @@
 namespace Openkaarten_Base_Plugin\Admin;
 
 use geoPHP\geoPHP;
+use Openkaarten_Base_Functions\Openkaarten_Base_Functions;
 
 /**
  * Helper class for CMB2
@@ -107,25 +108,35 @@ class Cmb2 {
 	 * @return string The field type HTML.
 	 */
 	public static function cmb2_render_openstreetmap_field_type( $field, $escaped_value, $object_id ) {
-		$args = wp_parse_args(
-			[
-				'post_type'   => 'owc_ok_location',
-				'numberposts' => -1,
-				'orderby'     => 'title',
-				'order'       => 'ASC',
-				// phpcs:ignore WordPress.DB.SlowDBQuery -- This query is needed to get the locations.
-				'meta_query'  => [
-					'relation' => 'OR',
-					[
-						'key'     => 'location_datalayer_id',
-						'value'   => $object_id,
-						'compare' => '=',
-					],
-				],
-			]
-		);
 
-		$datalayer_locations = get_posts( $args );
+		$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
+
+		switch ( $datalayer_type ) {
+			case 'fileinput':
+			case 'url':
+			default:
+				global $wpdb;
+
+				// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
+				$datalayer_locations = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT p.ID FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
+            WHERE p.post_type = 'owc_ok_location'
+              AND p.post_status = 'publish'
+              AND pm.meta_key = 'geometry'
+              AND pm.meta_value IS NOT NULL
+              AND pm2.meta_key = 'location_datalayer_id'
+              AND pm2.meta_value = %s
+            ORDER BY p.post_title ASC",
+						$object_id
+					)
+				);
+
+				break;
+		}
 
 		if ( ! $datalayer_locations ) {
 			echo esc_html__( 'No locations found for this datalayer.', 'openkaarten-base' );
@@ -147,32 +158,54 @@ class Cmb2 {
 				}
 
 				$geometry_array = json_decode( $geometry_object[0], true );
-				if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
-					continue;
+
+				// Check if the geometry object has a type Feature wrapper or not.
+				if ( 'Feature' !== $geometry_array['type'] ) {
+					$geometry_array = [
+						'type'       => 'Feature',
+						'geometry'   => $geometry_array,
+						'propreties' => [],
+					];
 				}
 
-				$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
-				$bbox = $geom->getBBox();
+				// Check if type of geometry is GeometryCollection.
+				if ( 'GeometryCollection' === $geometry_array['geometry']['type'] ) {
+					if ( empty( $geometry_array['geometries'] ) || empty( $geometry_array['geometries'][0]['coordinates'] ) ) {
+						continue;
+					}
+				} elseif ( empty( $geometry_array['geometry']['coordinates'] ) ) {
+						continue;
+				}
 
-				$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
-				$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
-				$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
-				$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
+				try {
+					$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
 
-				// Get average lat and long for the center of the map.
-				$center_lat  = ( $min_lat + $max_lat ) / 2;
-				$center_long = ( $min_long + $max_long ) / 2;
+					$bbox = $geom->getBBox();
 
-				$title           = get_the_title( $location->ID );
-				$location_marker = Locations::get_location_marker( $object_id, $location->ID );
+					$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
+					$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
+					$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
+					$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
 
-				$locations[] = [
-					'lat'     => ( $bbox['miny'] + $bbox['maxy'] ) / 2,
-					'long'    => ( $bbox['minx'] + $bbox['maxx'] ) / 2,
-					'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
-					'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
-					'color'   => $location_marker['color'],
-				];
+					// Get average lat and long for the center of the map.
+					$center_lat  = ( $min_lat + $max_lat ) / 2;
+					$center_long = ( $min_long + $max_long ) / 2;
+
+					$title           = get_the_title( $location->ID );
+					$location_marker = Locations::get_location_marker( $object_id, $location->ID );
+
+					$locations[] = [
+						'feature' => $geometry_array,
+						'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
+						'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
+						'color'   => $location_marker['color'],
+					];
+
+				} catch ( \Exception $e ) {
+					// Add error message via admin notice.
+					echo esc_html__( 'The geometry is not valid and can\'t be parsed.', 'openkaarten-base' );
+					return;
+				}
 			}
 		}
 
@@ -187,9 +220,11 @@ class Cmb2 {
 				'maxLong'      => esc_attr( $max_long ),
 				'centerLat'    => esc_attr( $center_lat ),
 				'centerLong'   => esc_attr( $center_long ),
+				'defaultZoom'  => 10,
+				'fitBounds'    => true,
 			]
 		);
 
-		echo '<div id="map" class="map"></div>';
+		echo '<div id="map-base" class="map-base"></div>';
 	}
 }

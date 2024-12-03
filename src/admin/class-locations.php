@@ -9,6 +9,8 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use Openkaarten_Base_Functions\Openkaarten_Base_Functions;
+
 /**
  * Adds location post type and support for mapping fieldlabels.
  */
@@ -58,7 +60,7 @@ class Locations {
 		add_action( 'cmb2_init', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'action_cmb2_init' ] );
 		add_filter( 'cmb2_override_field_latitude_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'prefill_geometry_object' ], 10, 4 );
 		add_filter( 'cmb2_override_field_longitude_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'prefill_geometry_object' ], 10, 4 );
-		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_geometry_object' ], 10, 1 );
+		add_action( 'save_post_owc_ok_location', [ 'Openkaarten_Base_Plugin\Admin\Locations', 'save_geometry_object' ], 20, 1 );
 	}
 
 	/**
@@ -82,6 +84,10 @@ class Locations {
 
 		self::cmb2_location_datalayer_field();
 
+		if ( 'owc_ok_location' !== get_post_type( $post_id ) ) {
+			return;
+		}
+
 		if ( empty( $post_id ) ) {
 			return;
 		}
@@ -94,6 +100,10 @@ class Locations {
 		}
 
 		self::cmb2_location_fixed_fields();
+
+		if ( class_exists( '\Openkaarten_Base_Functions\Openkaarten_Base_Functions' ) ) {
+			Openkaarten_Base_Functions::cmb2_location_geometry_fields( $post_id, [ 'owc_ok_location' ] );
+		}
 	}
 
 	/**
@@ -207,6 +217,12 @@ class Locations {
 		);
 
 		foreach ( $source_fields as $field ) {
+			// Check if the value for this specific field for this specific location is an object or an array.
+			$location_field_value = get_post_meta( self::$object_id, 'field_' . $field['field_label'], true );
+			if ( is_array( $location_field_value ) || is_object( $location_field_value ) ) {
+				continue;
+			}
+
 			$required = $field['field_required'] ?? false;
 
 			$field['attributes'] = [];
@@ -246,12 +262,13 @@ class Locations {
 	/**
 	 * Get the location marker for the location.
 	 *
-	 * @param int $datalayer_id The datalayer ID.
-	 * @param int $location_id The location ID.
+	 * @param int   $datalayer_id The datalayer ID.
+	 * @param int   $location_id The location ID.
+	 * @param array $location_data The location data.
 	 *
 	 * @return array The color and icon of the marker.
 	 */
-	public static function get_location_marker( $datalayer_id, $location_id ) {
+	public static function get_location_marker( $datalayer_id, $location_id = false, $location_data = false ) {
 		$marker_field = get_post_meta( $datalayer_id, 'marker_field', true );
 		$markers      = get_post_meta( $datalayer_id, 'markers', true );
 
@@ -261,7 +278,17 @@ class Locations {
 		// Check marker customization and set correct marker icon and color.
 		if ( ! empty( $markers ) && ! empty( $marker_field ) ) {
 			foreach ( $markers as $marker_data ) {
-				$location_marker_field = get_post_meta( $location_id, 'field_' . $marker_field, true );
+				if ( ! $location_id ) {
+					$location_marker_field = $location_data['properties'][ $marker_field ];
+				} else {
+					$prefix = '';
+					if ( 'owc_ok_location' === get_post_type( $location_id ) ) {
+						$prefix = 'field_';
+					}
+
+					$location_marker_field = get_post_meta( $location_id, $prefix . $marker_field, true );
+				}
+
 				if ( isset( $marker_data['field_value'] ) && $location_marker_field === $marker_data['field_value'] ) {
 					if ( ! empty( $marker_data['marker_color'] ) ) {
 						$color = $marker_data['marker_color'];
@@ -345,24 +372,7 @@ class Locations {
 		}
 
 		// Check nonce.
-		if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
-			return;
-		}
-
-		if ( doing_action( 'save_post_event' ) ) {
-			// We cannot do this now. The post we are trying to update doesn't exist yet.
-			add_action(
-				'shutdown',
-				function () use ( $post_id ) {
-					// Do the save-actions.
-					$this->save_handler( $post_id );
-					// And clear the wp-rest-cache.
-					if ( class_exists( \Caching::class ) ) {
-						\Caching::get_instance()->delete_cache_by_endpoint( '%/openkaarten/v1/datasets', \Caching::FLUSH_LOOSE, true );
-					}
-				}
-			);
-
+		if ( ! isset( $_POST['nonce_CMB2phplocation_geometry_metabox'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce_CMB2phplocation_geometry_metabox'] ) ), 'nonce_CMB2phplocation_geometry_metabox' ) ) {
 			return;
 		}
 
@@ -377,29 +387,9 @@ class Locations {
 			}
 		}
 
-		// Make the geometry object.
-		$geometry = [];
-		if ( isset( $_POST['field_latitude'] ) && isset( $_POST['field_longitude'] ) ) {
-			$latitude  = sanitize_text_field( wp_unslash( $_POST['field_latitude'] ) );
-			$longitude = sanitize_text_field( wp_unslash( $_POST['field_longitude'] ) );
-			$geometry  = [
-				'type'        => 'Point',
-				'coordinates' => [ (float) $longitude, (float) $latitude ],
-			];
-		}
-
-		$component = [
-			'type'       => 'Feature',
-			'properties' => $properties,
-			'geometry'   => $geometry,
-		];
-		$component = wp_json_encode( $component );
-
-		// Check if post meta exists and update or add the post meta.
-		if ( metadata_exists( 'post', $post_id, 'geometry' ) ) {
-			update_post_meta( $post_id, 'geometry', wp_slash( $component ) );
-		} else {
-			add_post_meta( $post_id, 'geometry', wp_slash( $component ), true );
+		// Execute the save_geometry_object function from the Openkaarten_Base_Functions class.
+		if ( class_exists( '\Openkaarten_Base_Functions\Openkaarten_Base_Functions' ) ) {
+			Openkaarten_Base_Functions::save_geometry_object( $post_id, $properties );
 		}
 	}
 }

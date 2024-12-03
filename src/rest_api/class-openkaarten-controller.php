@@ -9,12 +9,10 @@
 
 namespace Openkaarten_Base_Plugin\Rest_Api;
 
+use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
-use Openkaarten_Base_Plugin\Admin\Helper;
-use Openkaarten_Base_Plugin\Admin\Importer;
 use Openkaarten_Base_Plugin\Admin\Locations;
 use Openkaarten_Base_Plugin\Conversion;
-use SimpleXMLElement;
 
 /**
  * The Openkaarten_Controller class.
@@ -59,8 +57,11 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 * @return void
 	 */
 	private function __construct() {
+		parent::__construct( 'owc_ok_datalayer' );
+
 		add_action( 'init', [ $this, 'init' ] );
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
+
 		add_filter(
 			'rest_pre_serve_request',
 			[
@@ -257,6 +258,17 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$post = get_post( $id );
 		if ( ! $post ) {
 			return new \WP_Error( 'rest_post_invalid_id', __( 'Invalid post ID.', 'openkaarten-base' ), [ 'status' => 404 ] );
+		}
+
+		// Check if output format exists in the processor types.
+		$output_format = $request['output_format'];
+		if ( ! empty( $output_format ) ) {
+			$processor_types        = geoPHP::getAdapterMap();
+			$processor_types_string = implode( ', ', array_keys( $processor_types ) );
+			if ( ! isset( $processor_types[ $output_format ] ) ) {
+				// translators: %s: List of valid output formats.
+				return new \WP_Error( 'rest_post_invalid_output_format', sprintf( __( 'Invalid output format. Use one of the following output formats: %s', 'openkaarten-base' ), $processor_types_string ), [ 'status' => 404 ] );
+			}
 		}
 
 		$response = $this->prepare_item_for_response( $post, $request );
@@ -520,6 +532,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 * @return array|string The item data.
 	 */
 	public function prepare_item_for_response( $item, $request ) {
+		$output_format = $request['output_format'] ?? 'geojson';
+
 		// Get all locations which are linked to this dataset.
 		$location_args = [
 			'post_type'      => 'owc_ok_location',
@@ -554,13 +568,18 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			'features' => $locations,
 		];
 
-		if ( ! isset( $request['output_format'] ) || 'json' === $request['output_format'] || 'geojson' === $request['output_format'] ) {
-			return $item_data;
+		$item_data = wp_json_encode( $item_data );
+
+		try {
+			$geom = geoPHP::load( $item_data );
+
+			$output = $geom->out( $output_format );
+
+			return $output;
+
+		} catch ( IOException $e ) {
+			return [];
 		}
-
-		$geom = geoPHP::load( wp_json_encode( $item_data ) );
-
-		return $geom->out( $request['output_format'] );
 	}
 
 	/**
@@ -657,42 +676,36 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	 * @return bool Whether the request has already been served.
 	 */
 	public static function rest_change_output_format( $served, $result, $request, $server ) {
-
 		// Bail if the result is not an instance of WP_REST_Response.
 		if ( ! $result instanceof \WP_REST_Response ) {
 			return $served;
 		}
 
-		// Check if the output format is set.
-		if ( empty( $request['output_format'] ) ) {
-			return $served;
+		// Check if output format exists in the processor types.
+		$output_format = $request['output_format'];
+		if ( ! empty( $output_format ) ) {
+			$processor_types = geoPHP::getAdapterMap();
+			if ( ! isset( $processor_types[ $output_format ] ) ) {
+				return false;
+			}
 		}
 
-		switch ( strtolower( $request['output_format'] ) ) {
-			case 'kml':
-				$output_format = 'application/vnd.google-earth.kml+xml';
-				break;
-			case 'xml':
-				$output_format = 'application/xml';
-				break;
-			case 'geojson':
-			default:
-				return $served;
+		$output_format = $request['output_format'] ?? 'geojson';
+
+		// Different output for json and geojson, otherwise it outputs with backslashes.
+		if ( in_array( $output_format, [ 'json', 'geojson' ], true ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The output is escaped in the WP_REST_Response class.
+			echo $result->get_data();
+			exit();
 		}
 
-		// Send headers.
-		$server->send_header( 'Content-Type', $output_format );
+		// Change the output headers for specific output formats.
+		$server->send_header( 'Content-Type', 'application/' . $output_format );
+		$server->send_header( 'Content-Disposition', 'attachment; filename=' . $request['id'] . '.' . $output_format );
 
-		if ( 'kml' === $request['output_format'] ) {
-			$server->send_header( 'Content-Disposition', 'attachment; filename=locations.kml' );
-		}
-
-		// Echo the output that's returned.
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The output is escaped in the WP_REST_Response class.
 		echo $result->get_data();
-
-		// And then exit.
-		exit;
+		exit();
 	}
 
 	/**

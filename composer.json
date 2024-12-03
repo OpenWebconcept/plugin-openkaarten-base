@@ -20,6 +20,10 @@
             "url": "git@github.com:richardkorthuis/geoPHP.git"
         },
         {
+            "type": "git",
+            "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git"
+        },
+        {
             "type": "composer",
             "url": "https://wpackagist.org",
             "only": [
@@ -40,6 +44,7 @@
 
     },
     "require-dev" : {
+        "acato/openkaarten-base-functions": "dev-master",
         "acato/wp-pre-commit-hook": "*",
         "bjornjohansen/wp-pre-commit-hook" : "*",
         "phpcompatibility/phpcompatibility-wp": "*"

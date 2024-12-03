@@ -9,12 +9,41 @@
 
 namespace Openkaarten_Base_Plugin\Admin;
 
+use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
 
 /**
  * Adds datalayers post type and support for mapping fieldlabels.
  */
 class Datalayers {
+
+	/**
+	 * The CMB2 object id.
+	 *
+	 * @var int
+	 */
+	private static $cmb_object_id;
+
+	/**
+	 * The datalayer type.
+	 *
+	 * @var string
+	 */
+	private static $datalayer_type;
+
+	/**
+	 * The datalayer URL.
+	 *
+	 * @var string
+	 */
+	private static $datalayer_url;
+
+	/**
+	 * Whether the datalayer fetch failed.
+	 *
+	 * @var bool
+	 */
+	private static $datalayer_fetch_error = false;
 
 	/**
 	 * The singleton instance of this class.
@@ -43,13 +72,32 @@ class Datalayers {
 	 * @return void
 	 */
 	private function __construct() {
+		// Define global $cmb object id.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+		if ( ! empty( $_POST['post_ID'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is not needed here.
+			self::$cmb_object_id = intval( $_POST['post_ID'] );
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not needed here.
+		if ( ! empty( $_GET['post'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verification is not needed here.
+			self::$cmb_object_id = intval( $_GET['post'] );
+		}
+
 		add_action( 'init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'register_datalayer_post_type' ] );
+		add_action( 'wp_trash_post', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'delete_datalayer_locations' ], 10, 1 );
+
+		// Check the post type of the CMB object, otherwise this code is also executed on other post types.
+		$post_type = get_post_type( self::$cmb_object_id );
+		if ( $post_type && 'owc_ok_datalayer' !== $post_type ) {
+			return;
+		}
+
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_datalayer_metaboxes' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
 		add_action( 'cmb2_save_post_fields', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_save_datalayer_fields' ], 10, 4 );
-		add_action( 'wp_trash_post', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'delete_datalayer_locations' ], 10, 1 );
 	}
 
 	/**
@@ -104,6 +152,23 @@ class Datalayers {
 				'id'           => 'datalayer_metabox',
 				'title'        => __( 'Datalayer', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_datalayer_metabox' ],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name'       => __( 'Datalayer Type', 'openkaarten-base' ),
+				'id'         => 'datalayer_type',
+				'type'       => 'radio_inline',
+				'options'    => [
+					'fileinput' => __( 'File', 'openkaarten-base' ),
+					'url'       => __( 'URL', 'openkaarten-base' ),
+				],
+				'attributes' => [
+					'data-validation' => 'required',
+				],
+				'default'    => 'fileinput',
 			]
 		);
 
@@ -116,9 +181,76 @@ class Datalayers {
 					'url' => false,
 				],
 				'attributes' => [
-					'data-validation' => 'required',
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'fileinput',
 				],
 			]
+		);
+
+		// Check if datalayer type is set. If not, then check if the post is updated and get the datalayer type from the post.
+		self::$datalayer_type = get_post_meta( self::$cmb_object_id, 'datalayer_type', true );
+
+		if ( empty( self::$datalayer_type ) && ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) ) ) ) {
+			// Check nonce.
+			if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
+				return;
+			}
+
+			if ( ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) ) ) ) {
+				self::$datalayer_type = sanitize_text_field( wp_unslash( $_POST['datalayer_type'] ) );
+			}
+		}
+
+		// Check if datalayer type is set. If not, then check if the post is updated and get the datalayer type from the post.
+		// If the datalayer type is set, then disable the field.
+		self::$datalayer_url = get_post_meta( self::$cmb_object_id, 'datalayer_url', true );
+		if ( empty( self::$datalayer_type ) && ! empty( sanitize_text_field( wp_unslash( $_POST['datalayer_url'] ) ) ) ) {
+			// Check nonce.
+			if ( ! isset( $_POST['openkaarten_cmb2_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['openkaarten_cmb2_nonce'] ) ), 'openkaarten_cmb2_nonce' ) ) {
+				return;
+			}
+
+			self::$datalayer_url = sanitize_text_field( wp_unslash( $_POST['datalayer_url'] ) );
+		}
+
+		$cmb->add_field(
+			[
+				'name'       => __( 'Datalayer URL', 'openkaarten-base' ),
+				'id'         => 'datalayer_url',
+				'type'       => 'text_url',
+				'desc'       => __( 'Insert a valid URL. The URL must be accessible by the server and the output has to be a supported format: JSON, geoJSON, KML or XML.', 'openkaarten-base' ),
+				'attributes' => [
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'url',
+					'readonly'               => ! empty( self::$datalayer_url ) ? true : false,
+				],
+			]
+		);
+
+		if ( ! self::$cmb_object_id ) {
+			return;
+		}
+
+		$source_fields = self::get_datalayer_source_fields( self::$cmb_object_id );
+
+		if ( is_wp_error( $source_fields ) ) {
+			// Add error message via admin notice.
+			Helper::add_error_message( $source_fields->get_error_message() );
+			self::$datalayer_fetch_error = true;
+
+			return;
+		}
+
+		// Stop here if we can't get the source fields.
+		if ( empty( $source_fields ) ) {
+			$source_fields = [ 'title' ];
+		}
+
+		$source_fields = array_map(
+			function ( $field ) {
+				return '{' . $field . '}';
+			},
+			$source_fields
 		);
 
 		$cmb = new_cmb2_box(
@@ -126,16 +258,8 @@ class Datalayers {
 				'id'           => 'title_field_mapping_metabox',
 				'title'        => __( 'Title field mapping', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
-				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_title_mapping_metabox' ],
 			]
-		);
-
-		$source_fields = self::cmb2_get_source_fields( $cmb->object_id() );
-		$source_fields = array_map(
-			function ( $field ) {
-				return '{' . $field . '}';
-			},
-			$source_fields
 		);
 
 		$cmb->add_field(
@@ -146,7 +270,9 @@ class Datalayers {
 				// translators: %s: source fields.
 				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s', 'openkaarten-base' ), implode( ', ', $source_fields ) ),
 				'attributes' => [
-					'required' => 'required',
+					'required'               => 'required',
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => wp_json_encode( [ 'fileinput', 'url' ] ),
 				],
 				'default'    => ! empty( $source_fields ) ? $source_fields[0] : '',
 			]
@@ -319,6 +445,14 @@ class Datalayers {
 	 * @return void
 	 */
 	public static function add_markers_metaboxes() {
+		if ( ! self::$cmb_object_id ) {
+			return;
+		}
+
+		if ( self::$datalayer_fetch_error ) {
+			return;
+		}
+
 		$prefix = 'datalayer_markers_';
 
 		$cmb = new_cmb2_box(
@@ -444,6 +578,55 @@ class Datalayers {
 	}
 
 	/**
+	 * Check if the current screen is the correct CMB2 screen.
+	 *
+	 * @return bool
+	 */
+	public static function is_correct_cmb2_screen() {
+		// Get the current screen object.
+		$screen = get_current_screen();
+
+		// Check if we are on the edit screen of a specific custom post type.
+		if ( 'owc_ok_datalayer' === $screen->post_type && 'post' === $screen->base ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Show the datalayer metabox.
+	 *
+	 * @return bool
+	 */
+	public static function show_datalayer_metabox() {
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Show the title mapping metabox.
+	 *
+	 * @param \CMB2 $cmb The CMB2 object.
+	 *
+	 * @return bool
+	 */
+	public static function show_title_mapping_metabox( $cmb ) {
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
+
+		return ( ! empty( $datalayer_file ) && 'fileinput' === self::$datalayer_type ) ||
+				( ! empty( $datalayer_url ) && 'url' === self::$datalayer_type );
+	}
+
+	/**
 	 * Show the field mapping metabox.
 	 *
 	 * @param \CMB2 $cmb The CMB2 object.
@@ -451,9 +634,15 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_field_mapping_metabox( $cmb ) {
-		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
 
-		return ! empty( $datalayer_file );
+		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
+
+		return ( ! empty( $datalayer_file ) && 'fileinput' === self::$datalayer_type ) ||
+				( ! empty( $datalayer_url ) && 'url' === self::$datalayer_type );
 	}
 
 	/**
@@ -464,10 +653,15 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_markers_metabox( $cmb ) {
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
 
-		return ! empty( $datalayer_file ) && ! empty( $title_field_mapping );
+		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) ) && ! empty( $title_field_mapping );
 	}
 
 	/**
@@ -478,10 +672,19 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_locations_metabox( $cmb ) {
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		if ( self::$datalayer_fetch_error ) {
+			return false;
+		}
+
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
 
-		return ! empty( $datalayer_file ) && ! empty( $title_field_mapping );
+		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) ) && ! empty( $title_field_mapping );
 	}
 
 	/**
@@ -498,36 +701,71 @@ class Datalayers {
 		if ( 'cmb2_field_no_override_val' !== $value ) {
 			return $value;
 		}
-		$data = get_post_meta( $object_id, 'source_fields', true );
-		if ( $data ) {
+
+		$source_fields = get_post_meta( $object_id, 'source_fields', true );
+
+		if ( $source_fields ) {
 			return $value;
 		}
 
-		$datalayer_file = get_post_meta( $object_id, 'datalayer_file_id', true );
-		if ( ! $datalayer_file ) {
+		switch ( self::$datalayer_type ) {
+			case 'fileinput':
+			default:
+				$datalayer_file = get_post_meta( $object_id, 'datalayer_file_id', true );
+				if ( ! $datalayer_file ) {
+					return $value;
+				}
+				$file = get_attached_file( $datalayer_file );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
+				$file_contents = file_get_contents( $file );
+
+				break;
+			case 'url':
+				$file_contents = self::fetch_datalayer_url_data();
+
+				break;
+		}
+
+		// Check if data is a WP_Error.
+		if ( is_wp_error( $file_contents ) ) {
+			// Add error message via admin notice.
+			Helper::add_error_message( $file_contents->get_error_message() );
+			self::$datalayer_fetch_error = true;
+
+			return [];
+		}
+
+		try {
+			$data = geoPHP::load( $file_contents );
+
+			if ( ! $data->getComponents() && ! $data->getComponents()[0] ) {
+				return $value;
+			}
+
+			$datalayer_properties = $data->getComponents()[0]->getData();
+
+			if ( empty( $datalayer_properties ) ) {
+				return $value;
+			}
+
+			$repeater = [];
+
+			foreach ( $datalayer_properties as $key => $val ) {
+				$repeater[] = [
+					'field_label'         => $key,
+					'field_display_label' => $key,
+					'field_show'          => false,
+				];
+			}
+
+			return $repeater;
+		} catch ( IOException $e ) {
+			// Add error message via admin notice.
+			Helper::add_error_message( esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ) );
+			self::$datalayer_fetch_error = true;
+
 			return $value;
 		}
-		$file = get_attached_file( $datalayer_file );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-		$data = file_get_contents( $file );
-		$geom = geoPHP::load( $data );
-		$json = $geom->out( 'json' );
-		$data = json_decode( $json, true );
-
-		if ( ! $data ) {
-			return $value;
-		}
-
-		$repeater = [];
-		foreach ( $data['features'][0]['properties'] as $key => $val ) {
-			$repeater[] = [
-				'field_label'         => $key,
-				'field_display_label' => $key,
-				'field_show'          => false,
-			];
-		}
-
-		return $repeater;
 	}
 
 	/**
@@ -621,31 +859,95 @@ class Datalayers {
 	}
 
 	/**
-	 * Get the source fields from the datalayer file.
+	 * Fetch the data from an external source URL.
+	 *
+	 * @return mixed
+	 */
+	public static function fetch_datalayer_url_data() {
+		$url      = self::$datalayer_url;
+		$response = wp_remote_get( $url );
+
+		// Check if response is a WP_Error.
+		if ( is_wp_error( $response ) ) {
+			// Return an error message.
+			return $response->get_error_message();
+		}
+
+		// Check if response is not a 200 OK.
+		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			// Return an error message.
+			return new \WP_Error( 'error', __( 'Can\'t fetch datalayer URL.', 'openkaarten-base' ) );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+
+		if ( ! $body ) {
+			return new \WP_Error( 'no_data', __( 'No data found.', 'openkaarten-base' ) );
+		}
+
+		return $body;
+	}
+
+	/**
+	 * Get the source fields from the datalayer URL.
 	 *
 	 * @param int|string $object_id The object ID.
 	 *
-	 * @return array
+	 * @return array|\WP_Error
 	 */
-	public static function cmb2_get_source_fields( $object_id ) {
-		// Get source fields from the datalayer file.
-		$datalayer_file = get_post_meta( $object_id, 'datalayer_file_id', true );
-		if ( ! $datalayer_file ) {
-			return [];
+	public static function get_datalayer_source_fields( $object_id ) {
+		// First try to retrieve the source fields from the postmeta.
+		$source_fields = get_post_meta( $object_id, 'source_fields', true );
+
+		if ( ! empty( $source_fields ) ) {
+			// Get all field labels from the source_fields array.
+			$source_fields = array_map(
+				function ( $field ) {
+					return $field['field_label'];
+				},
+				$source_fields
+			);
+
+			return $source_fields;
 		}
 
-		$file = get_attached_file( $datalayer_file );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-		$data = file_get_contents( $file );
-		$geom = geoPHP::load( $data );
-		$json = $geom->out( 'json' );
-		$data = json_decode( $json, true );
+		// If no source fields are set, get the source fields from the datalayer file.
+		switch ( self::$datalayer_type ) {
+			case 'fileinput':
+			default:
+				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
+				$data = file_get_contents( $file );
+
+				break;
+			case 'url':
+				$data = self::fetch_datalayer_url_data();
+
+				break;
+		}
+
+		// Check if data is a WP_Error.
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
 
 		$source_fields = [];
-		if ( $data ) {
-			foreach ( $data['features'][0]['properties'] as $key => $val ) {
-				$source_fields[] = $key;
+
+		// Check if data is valid GeoJSON and if we can parse it. If not, a IOException will be thrown.
+		try {
+			$geom = geoPHP::load( $data );
+
+			if ( ! $geom->getComponents() && ! $geom->getComponents()[0] ) {
+				return [];
 			}
+
+			if ( $geom->getComponents()[0]->getData() ) {
+				foreach ( $geom->getComponents()[0]->getData() as $key => $val ) {
+					$source_fields[] = $key;
+				}
+			}
+		} catch ( IOException $e ) {
+			return new \WP_Error( 'error', esc_html__( 'The geo file is not valid and can\'t be parsed.', 'openkaarten-base' ) );
 		}
 
 		return $source_fields;
@@ -665,18 +967,20 @@ class Datalayers {
 		if ( 'field_mapping_metabox' === $cmb_id ) {
 			$source_fields = $cmb->get_field( 'source_fields' )->value();
 
-			foreach ( $source_fields as $field ) {
-				if ( ! empty( $field['field_label'] ) && ! empty( $field['field_display_label'] ) ) {
-					update_post_meta( $object_id, 'field_' . $field['field_label'], $field['field_display_label'] );
-				}
-				if ( ! empty( $field['field_show'] ) ) {
-					update_post_meta( $object_id, 'field_' . $field['field_label'] . '_show', 'on' === $field['field_show'] );
-				}
-				if ( ! empty( $field['field_required'] ) ) {
-					update_post_meta( $object_id, 'field_' . $field['field_label'] . '_required', 'on' === $field['field_required'] );
-				}
-				if ( ! empty( $field['field_type'] ) ) {
-					update_post_meta( $object_id, 'field_' . $field['field_label'] . '_type', $field['field_type'] );
+			if ( ! empty( $source_fields ) ) {
+				foreach ( $source_fields as $field ) {
+					if ( ! empty( $field['field_label'] ) && ! empty( $field['field_display_label'] ) ) {
+						update_post_meta( $object_id, 'field_' . $field['field_label'], $field['field_display_label'] );
+					}
+					if ( ! empty( $field['field_show'] ) ) {
+						update_post_meta( $object_id, 'field_' . $field['field_label'] . '_show', 'on' === $field['field_show'] );
+					}
+					if ( ! empty( $field['field_required'] ) ) {
+						update_post_meta( $object_id, 'field_' . $field['field_label'] . '_required', 'on' === $field['field_required'] );
+					}
+					if ( ! empty( $field['field_type'] ) ) {
+						update_post_meta( $object_id, 'field_' . $field['field_label'] . '_type', $field['field_type'] );
+					}
 				}
 			}
 		}

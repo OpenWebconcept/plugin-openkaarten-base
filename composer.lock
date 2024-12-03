@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eb362456a8118c9988a68efc3221fc58",
+    "content-hash": "74929d36b3c4d1075298dca9b2cee4a0",
     "packages": [
         {
             "name": "composer/installers",
@@ -266,6 +266,41 @@
         }
     ],
     "packages-dev": [
+        {
+            "name": "acato/openkaarten-base-functions",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git",
+                "reference": "5aa316fde1c30cdadc5ec1f4190d06279cb9dad4"
+            },
+            "require": {
+                "composer/installers": "~1.0"
+            },
+            "require-dev": {
+                "acato/wp-pre-commit-hook": "*",
+                "phpcompatibility/phpcompatibility-wp": "*"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Openkaarten_Base_Functions\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Eyal Beker",
+                    "email": "eyal@acato.nl"
+                }
+            ],
+            "description": "Adds global functions for OpenKaarten Base and OpenKaarten add-on plugins.",
+            "homepage": "https://www.acato.nl",
+            "time": "2024-12-03T12:38:46+00:00"
+        },
         {
             "name": "acato/wp-pre-commit-hook",
             "version": "1.0.0",
@@ -801,16 +836,16 @@
         },
         {
             "name": "squizlabs/php_codesniffer",
-            "version": "3.10.2",
+            "version": "3.11.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHP_CodeSniffer.git",
-                "reference": "86e5f5dd9a840c46810ebe5ff1885581c42a3017"
+                "reference": "70c08f8d20c0eb4fe56f26644dd94dae76a7f450"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/86e5f5dd9a840c46810ebe5ff1885581c42a3017",
-                "reference": "86e5f5dd9a840c46810ebe5ff1885581c42a3017",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/70c08f8d20c0eb4fe56f26644dd94dae76a7f450",
+                "reference": "70c08f8d20c0eb4fe56f26644dd94dae76a7f450",
                 "shasum": ""
             },
             "require": {
@@ -877,7 +912,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2024-07-21T23:26:44+00:00"
+            "time": "2024-11-12T09:53:29+00:00"
         },
         {
             "name": "wp-coding-standards/wpcs",
@@ -949,7 +984,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "richardkorthuis/geophp": 20
+        "richardkorthuis/geophp": 20,
+        "acato/openkaarten-base-functions": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

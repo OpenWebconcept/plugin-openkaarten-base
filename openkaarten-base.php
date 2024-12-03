@@ -13,7 +13,7 @@
  * Plugin Name:       OpenKaarten Base
  * Plugin URI:        https://www.openwebconcept.nl
  * Description:       The OpenKaarten Base plugin.
- * Version:           0.1.1
+ * Version:           0.1.2
  * Author:            Acato
  * Author URI:        https://www.acato.nl
  * License:           EUPL-1.2
@@ -27,7 +27,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'OWC_OPENKAARTEN_BASE_VERSION', '0.1.1' );
+define( 'OWC_OPENKAARTEN_BASE_VERSION', '0.1.2' );
 
 if ( ! defined( 'OWC_OPENKAARTEN_BASE_ABSPATH' ) ) {
 	define( 'OWC_OPENKAARTEN_BASE_ABSPATH', plugin_dir_path( __FILE__ ) );
@@ -35,6 +35,16 @@ if ( ! defined( 'OWC_OPENKAARTEN_BASE_ABSPATH' ) ) {
 
 if ( ! defined( 'OWC_OPENKAARTEN_BASE_ASSETS_URL' ) ) {
 	define( 'OWC_OPENKAARTEN_BASE_ASSETS_URL', esc_url( trailingslashit( plugins_url( '', __FILE__ ) ) . 'build' ) );
+}
+
+// Load Composer autoloader if available.
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
+// Initialize the OpenKaarten Base Functions class. First check if the class exists.
+if ( class_exists( '\Openkaarten_Base_Functions\Openkaarten_Base_Functions' ) ) {
+	Openkaarten_Base_Functions\Openkaarten_Base_Functions::init();
 }
 
 require_once plugin_dir_path( __FILE__ ) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'class-autoloader.php';

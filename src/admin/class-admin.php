@@ -113,17 +113,10 @@ class Admin {
 	public static function admin_enqueue_scripts() {
 		// Only include the script on the kaarten edit pages.
 		$screen = get_current_screen();
-		if ( ! in_array( $screen->id, [ 'owc_ok_datalayer', 'owc_ok_location' ], true ) ) {
+
+		if ( ! in_array( $screen->id, [ 'owc_ok_datalayer' ], true ) ) {
 			return;
 		}
-
-		wp_enqueue_script(
-			'cmb2-conditional-logic',
-			plugin_dir_url( __FILE__ ) . 'js/cmb2-conditional-logic.js',
-			[ 'jquery', 'cmb2-scripts' ],
-			filemtime( plugin_dir_path( __FILE__ ) . 'js/cmb2-conditional-logic.js' ),
-			true
-		);
 
 		wp_enqueue_script(
 			'owc_ok-cmb2-custom-js',
