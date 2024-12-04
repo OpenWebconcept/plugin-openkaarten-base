@@ -550,41 +550,9 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 				return [];
 			}
 
-			$locations = wp_remote_retrieve_body( $datalayer_file_input );
-
-			if ( empty( $locations ) ) {
-				return [];
-			}
-
-			// Parse the locations to a geoPHP object.
-			try {
-				$geom = geoPHP::load( $locations );
-
-				$locations_output = [];
-
-				foreach ( $geom->getComponents() as $component ) {
-					$location_output_item = $component->out( $output_format );
-					$locations_output[]   = json_decode( $location_output_item, true );
-				}
-
-				$item_data = [
-					'type'     => 'FeatureCollection',
-					'id'       => $item->ID,
-					'title'    => $item->post_title,
-					'features' => $locations_output,
-				];
-
-				$item_data = wp_json_encode( $item_data );
-
-				return $item_data;
-
-			} catch ( IOException $e ) {
-				return [];
-			}
+			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
 		} else {
 			// When the datalayer is set to import, get the locations from the database.
-			// This is already parsed via the import process, so we don't need to parse it again.
-
 			$location_args = [
 				'post_type'      => 'owc_ok_location',
 				'posts_per_page' => - 1,
@@ -603,6 +571,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			$posts_query  = new \WP_Query();
 			$query_result = $posts_query->query( $location_args );
 
+			// Prepare the locations for the response.
 			foreach ( $query_result as $post ) {
 				$location = $this->prepare_location_for_response( $post, $request, 'import', $item->ID );
 				if ( $location ) {
@@ -610,14 +579,29 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 				}
 			}
 
-			$locations = [
+			// Create a feature collection to parse the locations to a geoPHP object.
+			$feature_collection = [
 				'type'     => 'FeatureCollection',
 				'id'       => $item->ID,
 				'title'    => $item->post_title,
 				'features' => $locations,
 			];
 
-			return wp_json_encode( $locations );
+			$feature_collection = wp_json_encode( $feature_collection );
+		}
+
+		if ( empty( $feature_collection ) ) {
+			return [];
+		}
+
+		// Parse the FeatureCollection to a geoPHP object.
+		try {
+			$geom = geoPHP::load( $feature_collection );
+
+			return $geom->out( $output_format );
+
+		} catch ( IOException $e ) {
+			return [];
 		}
 	}
 
