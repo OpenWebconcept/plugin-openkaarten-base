@@ -169,8 +169,14 @@ class Cmb2 {
 
 				$component_properties = $location_output['properties'];
 
+				if ( isset( $location_output['geometry'] ) ) {
+					$geometry = $location_output['geometry'];
+				} else {
+					$geometry = $location_output;
+				}
+
 				$locations[] = [
-					'feature' => $location_output['geometry'] ?: [],
+					'feature' => $geometry,
 					'content' => $component_properties['title'] ?: '',
 					'icon'    => $component_properties['marker']['icon'] ?: '',
 					'color'   => $component_properties['marker']['color'] ?: '',
