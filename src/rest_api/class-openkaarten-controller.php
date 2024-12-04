@@ -222,7 +222,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 
 		$posts = [];
 		foreach ( $query_result as $post ) {
-			$posts[] = $this->prepare_item_for_response( $post, $request );
+			$post_feature = $this->prepare_item_for_response( $post, $request );
+			$posts[] = json_decode( $post_feature );
 		}
 
 		$response = [
@@ -601,16 +602,21 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			return $served;
 		}
 
+		$request_route = $request->get_route();
+
+		// Check if the request route is the Openkaarten items route.
+		if ( ! str_contains( $request_route, 'owc/openkaarten/v1/datasets/id' ) ) {
+			return $served;
+		}
+
 		// Check if output format exists in the processor types.
-		$output_format = $request['output_format'];
+		$output_format = $request['output_format'] ?? 'geojson';
 		if ( ! empty( $output_format ) ) {
 			$processor_types = geoPHP::getAdapterMap();
 			if ( ! isset( $processor_types[ $output_format ] ) ) {
 				return false;
 			}
 		}
-
-		$output_format = $request['output_format'] ?? 'geojson';
 
 		// Different output for json and geojson, otherwise it outputs with backslashes.
 		if ( in_array( $output_format, [ 'json', 'geojson' ], true ) ) {
