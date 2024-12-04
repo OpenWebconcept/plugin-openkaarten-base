@@ -542,6 +542,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$locations = [];
 
 		if ( 'live' === $datalayer_url_type ) {
+
 			// Retrieve the objects from the source file.
 			$datalayer_url        = get_post_meta( $item->ID, 'datalayer_url', true );
 			$datalayer_file_input = wp_remote_get( $datalayer_url );
@@ -551,7 +552,9 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			}
 
 			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
+
 		} else {
+
 			// When the datalayer is set to import, get the locations from the database.
 			$location_args = [
 				'post_type'      => 'owc_ok_location',
@@ -588,6 +591,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			];
 
 			$feature_collection = wp_json_encode( $feature_collection );
+
 		}
 
 		if ( empty( $feature_collection ) ) {
