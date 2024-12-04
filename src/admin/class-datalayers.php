@@ -996,6 +996,10 @@ class Datalayers {
 				break;
 		}
 
+		if ( ! $data ) {
+			return [];
+		}
+
 		// Check if data is a WP_Error.
 		if ( is_wp_error( $data ) ) {
 			return $data;

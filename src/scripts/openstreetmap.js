@@ -35,7 +35,8 @@ const map = new L.Map('map-base', {
   maxZoom: config.maximumZoom,
   maxBounds: fitBounds ? config.maxBounds : null,
   boxZoom: config.enableBoxZoomControl,
-  defaultExtentControl: config.enableHomeControl
+  defaultExtentControl: config.enableHomeControl,
+  enableZoomControl: config.enableZoomControl,
 });
 
 if ( fitBounds ) {

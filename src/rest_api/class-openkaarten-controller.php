@@ -541,75 +541,83 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		// Get all locations which are linked to this dataset.
 		$locations = [];
 
-		switch ( $datalayer_url_type ) {
-			case 'live':
-				// Retrieve the objects from the source file.
-				$datalayer_url = get_post_meta( $item->ID, 'datalayer_url', true );
+		if ( 'live' === $datalayer_url_type ) {
+			// Retrieve the objects from the source file.
+			$datalayer_url        = get_post_meta( $item->ID, 'datalayer_url', true );
+			$datalayer_file_input = wp_remote_get( $datalayer_url );
 
-				$datalayer_locations = wp_remote_get( $datalayer_url );
-				$datalayer_locations = json_decode( wp_remote_retrieve_body( $datalayer_locations ), true );
+			if ( is_wp_error( $datalayer_file_input ) ) {
+				return [];
+			}
 
-				// Check if the source file is an array with items or an object with a data key.
-				if ( ! isset( $datalayer_locations[0] ) ) {
-					// Check what the key is for the data by getting the first key.
-					$data_key            = array_keys( $datalayer_locations )[0];
-					$datalayer_locations = $datalayer_locations[ $data_key ];
+			$locations = wp_remote_retrieve_body( $datalayer_file_input );
+
+			if ( empty( $locations ) ) {
+				return [];
+			}
+
+			// Parse the locations to a geoPHP object.
+			try {
+				$geom = geoPHP::load( $locations );
+
+				$locations_output = [];
+
+				foreach ( $geom->getComponents() as $component ) {
+					$location_output_item = $component->out( $output_format );
+					$locations_output[]   = json_decode( $location_output_item, true );
 				}
 
-				foreach ( $datalayer_locations as $datalayer_location ) {
-					$location = $this->prepare_location_for_response( $datalayer_location, $request, 'live', $item->ID );
-					if ( $location ) {
-						$locations[] = $location;
-					}
-				}
-				break;
-			case 'import':
-			default:
-				$location_args = [
-					'post_type'      => 'owc_ok_location',
-					'posts_per_page' => - 1,
-					'orderby'        => 'title',
-					'order'          => 'ASC',
-					// phpcs:ignore WordPress.DB.SlowDBQuery -- This is a valid query.
-					'meta_query'     => [
-						'relation' => 'AND',
-						[
-							'key'   => 'location_datalayer_id',
-							'value' => $item->ID,
-						],
-					],
+				$item_data = [
+					'type'     => 'FeatureCollection',
+					'id'       => $item->ID,
+					'title'    => $item->post_title,
+					'features' => $locations_output,
 				];
 
-				$posts_query  = new \WP_Query();
-				$query_result = $posts_query->query( $location_args );
+				$item_data = wp_json_encode( $item_data );
 
-				foreach ( $query_result as $post ) {
-					$location = $this->prepare_location_for_response( $post, $request, 'import', $item->ID );
-					if ( $location ) {
-						$locations[] = $location;
-					}
+				return $item_data;
+
+			} catch ( IOException $e ) {
+				return [];
+			}
+		} else {
+			// When the datalayer is set to import, get the locations from the database.
+			// This is already parsed via the import process, so we don't need to parse it again.
+
+			$location_args = [
+				'post_type'      => 'owc_ok_location',
+				'posts_per_page' => - 1,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+				// phpcs:ignore WordPress.DB.SlowDBQuery -- This is a valid query.
+				'meta_query'     => [
+					'relation' => 'AND',
+					[
+						'key'   => 'location_datalayer_id',
+						'value' => $item->ID,
+					],
+				],
+			];
+
+			$posts_query  = new \WP_Query();
+			$query_result = $posts_query->query( $location_args );
+
+			foreach ( $query_result as $post ) {
+				$location = $this->prepare_location_for_response( $post, $request, 'import', $item->ID );
+				if ( $location ) {
+					$locations[] = $location;
 				}
-				break;
-		}
+			}
 
-		$item_data = [
-			'type'     => 'FeatureCollection',
-			'id'       => $item->ID,
-			'title'    => $item->post_title,
-			'features' => $locations,
-		];
+			$locations = [
+				'type'     => 'FeatureCollection',
+				'id'       => $item->ID,
+				'title'    => $item->post_title,
+				'features' => $locations,
+			];
 
-		$item_data = wp_json_encode( $item_data );
-
-		try {
-			$geom = geoPHP::load( $item_data );
-
-			$output = $geom->out( $output_format );
-
-			return $output;
-
-		} catch ( IOException $e ) {
-			return [];
+			return wp_json_encode( $locations );
 		}
 	}
 
@@ -626,45 +634,22 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	public function prepare_location_for_response( $item, $request, $type = 'import', $datalayer_id = null ) {
 
 		// Retrieve the geometry based on the type of request.
-		switch ( $type ) {
-			case 'live':
-				$geometry_json = Helper::array_search_recursive( 'geometry', $item ) ? : false;
+		$geometry_json = get_post_meta( $item->ID, 'geometry', true );
 
-				if ( ! $geometry_json ) {
-					return false;
-				}
-
-				$item_data['type']     = 'Feature';
-				$item_data['geometry'] = $geometry_json;
-
-				// Get dataset id param from URL.
-				$dataset_id = $datalayer_id;
-
-				// Add location title based on the title field mapping.
-				$title_fields   = get_post_meta( $datalayer_id, 'title_field_mapping', true );
-				$location_title = Importer::create_title_from_mapping( (array) $item, $title_fields );
-				break;
-			case 'import':
-			default:
-				$geometry_json = get_post_meta( $item->ID, 'geometry', true );
-
-				if ( ! $geometry_json ) {
-					return false;
-				}
-
-				$item_data       = json_decode( $geometry_json, true );
-				$item_data['id'] = $item->ID;
-				$item_data['title'] = get_the_title( $item->ID );
-
-				unset( $item_data['properties'] );
-
-				$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
-
-				// Add location title based on the post title.
-				$location_title = $item->post_title;
-				break;
+		if ( ! $geometry_json ) {
+			return false;
 		}
 
+		$item_data          = json_decode( $geometry_json, true );
+		$item_data['id']    = $item->ID;
+		$item_data['title'] = get_the_title( $item->ID );
+
+		unset( $item_data['properties'] );
+
+		$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
+
+		// Add location title based on the post title.
+		$location_title                   = $item->post_title;
 		$item_data['properties']['title'] = $location_title;
 
 		$search  = [];
@@ -683,11 +668,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 					continue;
 				}
 
-				if ( 'import' === $type ) {
-					$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
-				} elseif ( 'live' === $type ) {
-					$item_data['properties'][ $source_field['field_display_label'] ] = $item[ $source_field['field_label'] ];
-				}
+				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
 			}
 		}
 
@@ -702,20 +683,14 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		}
 
 		// Check if the post has a featured image and add it to the item data.
-		if ( 'import' === $type ) {
-			if ( get_the_post_thumbnail_url( $item->ID, 'large' ) ) {
-				$thumb_image                               = get_the_post_thumbnail_url( $item->ID, 'large' );
-				$thumb_id                                  = get_post_thumbnail_id( $item->ID );
-				$item_data['properties']['post_thumbnail'] = $this->create_image_output( $thumb_id, $thumb_image );
-			}
+		if ( get_the_post_thumbnail_url( $item->ID, 'large' ) ) {
+			$thumb_image                               = get_the_post_thumbnail_url( $item->ID, 'large' );
+			$thumb_id                                  = get_post_thumbnail_id( $item->ID );
+			$item_data['properties']['post_thumbnail'] = $this->create_image_output( $thumb_id, $thumb_image );
 		}
 
 		// Get marker information.
-		if ( 'import' === $type ) {
-			$item_marker = Locations::get_location_marker( $dataset_id, $item->ID );
-		} else {
-			$item_marker = Locations::get_location_marker( $dataset_id, false, $item );
-		}
+		$item_marker                                = Locations::get_location_marker( $dataset_id, $item->ID );
 		$item_data['properties']['marker']['color'] = $item_marker['color'];
 		$item_data['properties']['marker']['icon']  = Locations::get_location_marker_url( $item_marker['icon'] );
 

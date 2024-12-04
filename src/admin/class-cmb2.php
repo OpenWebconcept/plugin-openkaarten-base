@@ -118,16 +118,7 @@ class Cmb2 {
 				$datalayer_url = get_post_meta( $object_id, 'datalayer_url', true );
 
 				$datalayer_locations = wp_remote_get( $datalayer_url );
-				$datalayer_locations = json_decode( wp_remote_retrieve_body( $datalayer_locations ), true );
-
-				$array_keys_to_look_for = [ 'data', 'results' ];
-				// Check if the data is an array with a key from the $array_keys_to_look_for and if so, use that data.
-				foreach ( $array_keys_to_look_for as $key ) {
-					if ( isset( $datalayer_locations[ $key ] ) ) {
-						$datalayer_locations = $datalayer_locations[ $key ];
-						break;
-					}
-				}
+				$datalayer_locations = wp_remote_retrieve_body( $datalayer_locations );
 
 				break;
 			case 'import':
@@ -136,7 +127,7 @@ class Cmb2 {
 
 				// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
-				$datalayer_locations = $wpdb->get_results(
+				$datalayer_locations_db = $wpdb->get_results(
 					$wpdb->prepare(
 						"SELECT p.ID FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
@@ -152,6 +143,19 @@ class Cmb2 {
 					)
 				);
 
+				$datalayer_locations = [];
+
+				foreach ( $datalayer_locations_db as $location ) {
+
+					$geometry_object = get_post_meta( $location->ID, 'geometry', true );
+
+					if ( ! $geometry_object ) {
+						continue;
+					}
+
+					$datalayer_locations[] = $geometry_object;
+				}
+
 				break;
 		}
 
@@ -160,98 +164,45 @@ class Cmb2 {
 			return;
 		}
 
+		$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true ) ? : 'import';
+
 		$min_lat  = null;
 		$max_lat  = null;
 		$min_long = null;
 		$max_long = null;
 
 		$locations = [];
-		if ( $datalayer_locations ) {
-			foreach ( $datalayer_locations as $location ) {
 
-				$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true ) ? : 'import';
+		try {
+			$geom = geoPHP::load( $datalayer_locations );
 
-				if ( 'import' === $datalayer_url_type ) {
-					$geometry_object = get_post_meta( $location->ID, 'geometry' );
-				} else {
-					$geometry_object = Helper::array_search_recursive( 'geometry', $location ) ? : false;
-				}
+			$bbox = $geom->getBBox();
 
-				if ( ! $geometry_object ) {
-					continue;
-				}
+			// Set min and max values for the map.
+			$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
+			$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
+			$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
+			$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
 
-				if ( 'import' === $datalayer_url_type ) {
-					$geometry_array = json_decode( $geometry_object[0], true );
-					if ( empty( $geometry_array['geometry']['coordinates'] ) ) {
-						continue;
-					}
-				} else {
-					$geometry_array = $geometry_object;
-				}
+			// Get average lat and long for the center of the map.
+			$center_lat  = ( $min_lat + $max_lat ) / 2;
+			$center_long = ( $min_long + $max_long ) / 2;
 
-				// Check if the geometry object has a type Feature wrapper or not.
-				if ( 'Feature' !== $geometry_array['type'] ) {
-					$geometry_array = [
-						'type'       => 'Feature',
-						'geometry'   => $geometry_array,
-						'propreties' => [],
-					];
-				}
+			foreach ( $geom->getComponents() as $component ) {
+				$location_output = $component->out( 'json' );
+				$location_output = json_decode( $location_output, true );
 
-				// Check if type of geometry is GeometryCollection.
-				if ( 'GeometryCollection' === $geometry_array['geometry']['type'] ) {
-					if ( empty( $geometry_array['geometries'] ) || empty( $geometry_array['geometries'][0]['coordinates'] ) ) {
-						continue;
-					}
-				} elseif ( empty( $geometry_array['geometry']['coordinates'] ) ) {
-						continue;
-				}
-
-				// Set min and max values for the map.
-				$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
-				$bbox = $geom->getBBox();
-
-				try {
-					$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
-
-					$bbox = $geom->getBBox();
-
-					$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
-					$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
-					$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
-					$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
-
-					// Get average lat and long for the center of the map.
-					$center_lat  = ( $min_lat + $max_lat ) / 2;
-					$center_long = ( $min_long + $max_long ) / 2;
-
-					$title           = get_the_title( $location->ID );
-
-					// Set the content for the marker popup.
-					if ( 'import' === $datalayer_url_type ) {
-						$marker_content  = get_the_title( $location->ID ) . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>';
-						$location_marker = Locations::get_location_marker( $object_id, $location->ID );
-					} else {
-						$title_fields    = get_post_meta( $object_id, 'title_field_mapping', true );
-						$title           = Importer::create_title_from_mapping( $location, $title_fields );
-						$marker_content  = $title;
-						$location_marker = Locations::get_location_marker( $object_id, false, $location );
-					}
-
-					$locations[] = [
-						'feature' => $geometry_array,
-						'content' => $marker_content,
-						'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
-						'color'   => $location_marker['color'],
-					];
-
-				} catch ( \Exception $e ) {
-					// Add error message via admin notice.
-					echo esc_html__( 'The geometry is not valid and can\'t be parsed.', 'openkaarten-base' );
-					return;
-				}
+				$locations[] = [
+					'feature' => $location_output['geometry'] ?: [],
+					'content' => '',
+					'icon'    => '',
+					'color'   => '',
+				];
 			}
+		} catch ( \Exception $e ) {
+			// Add error message via admin notice.
+			echo esc_html__( 'The geometry is not valid and can\'t be parsed.', 'openkaarten-base' );
+			return;
 		}
 
 		wp_localize_script(
