@@ -289,7 +289,7 @@ class Admin {
 	 *
 	 * @return void
 	 */
-	public function flush_cache_for_specific_endpoints( $post_id = null ) {
+	public static function flush_cache_for_specific_endpoints( $post_id = null ) {
 		// Check if the post is saved or updated.
 		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! is_plugin_active( 'wp-rest-cache/wp-rest-cache.php' ) ) {
 			return;
