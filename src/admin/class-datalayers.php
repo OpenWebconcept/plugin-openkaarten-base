@@ -32,6 +32,13 @@ class Datalayers {
 	private static $datalayer_type;
 
 	/**
+	 * The datalayer URL type.
+	 *
+	 * @var string
+	 */
+	private static $datalayer_url_type;
+
+	/**
 	 * The datalayer URL.
 	 *
 	 * @var string
@@ -94,6 +101,7 @@ class Datalayers {
 		}
 
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_datalayer_metaboxes' ] );
+		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_tooltip_metaboxes' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
@@ -224,12 +232,60 @@ class Datalayers {
 					'data-conditional-value' => 'url',
 					'readonly'               => ! empty( self::$datalayer_url ) ? true : false,
 				],
+				'after'      => self::$datalayer_url ? '<p><a href="' . self::$datalayer_url . '" class="button" target="_blank">' . __( 'View source data', 'openkaarten-base' ) . '</a></p>' : '',
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name'       => __( 'Datalayer URL type', 'openkaarten-base' ),
+				'id'         => 'datalayer_url_type',
+				'type'       => 'radio_inline',
+				'desc'       => __( 'Select the URL type. Select import to import locations once with the option to synchronize later and select live to retrieve the datalayers from the source directly without importing them.', 'openkaarten-base' ),
+				'options'    => [
+					'import' => __( 'Import', 'openkaarten-base' ),
+					'live'   => __( 'Live', 'openkaarten-base' ),
+				],
+				'default'    => 'import',
+				'attributes' => [
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'url',
+				],
+			]
+		);
+
+		$cmb = new_cmb2_box(
+			[
+				'id'           => 'datalayer_import_metabox',
+				'title'        => __( 'Datalayer Import', 'openkaarten-base' ),
+				'object_types' => [ 'owc_ok_datalayer' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_import_sync_metabox' ],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name' => __( 'Datalayer Import', 'openkaarten-base' ),
+				'id'   => 'datalayer_import_sync',
+				'type' => 'import_sync',
 			]
 		);
 
 		if ( ! self::$cmb_object_id ) {
 			return;
 		}
+
+		$cmb = new_cmb2_box(
+			[
+				'id'           => 'title_field_mapping_metabox',
+				'title'        => __( 'Title field mapping', 'openkaarten-base' ),
+				'object_types' => [ 'owc_ok_datalayer' ],
+				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
+			]
+		);
+
+		self::$datalayer_type     = get_post_meta( $cmb->object_id(), 'datalayer_type', true );
+		self::$datalayer_url_type = get_post_meta( $cmb->object_id(), 'datalayer_url_type', true ) ? : 'import';
 
 		$source_fields = self::get_datalayer_source_fields( self::$cmb_object_id );
 
@@ -268,7 +324,8 @@ class Datalayers {
 				'id'         => 'title_field_mapping',
 				'type'       => 'text',
 				// translators: %s: source fields.
-				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s', 'openkaarten-base' ), implode( ', ', $source_fields ) ),
+				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s.', 'openkaarten-base' ), implode( ', ', $source_fields ) ) .
+								'<br /><span style="color: red;"><strong>' . __( 'Be aware: updating this field will automatically sync all items!', 'openkaarten-base' ) . '</strong></span>',
 				'attributes' => [
 					'required'               => 'required',
 					'data-conditional-id'    => 'datalayer_type',
@@ -355,10 +412,17 @@ class Datalayers {
 				'type' => 'checkbox',
 			]
 		);
+	}
 
+	/**
+	 * Add the tooltip metaboxes.
+	 *
+	 * @return void
+	 */
+	public static function add_tooltip_metaboxes() {
 		$cmb = new_cmb2_box(
 			[
-				'id'           => 'tooltip-metabox',
+				'id'           => 'tooltip_metabox',
 				'title'        => __( 'Tooltip configuration', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
 				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
@@ -638,11 +702,37 @@ class Datalayers {
 			return false;
 		}
 
+		if ( 'live' === self::$datalayer_url_type ) {
+			return false;
+		}
+
 		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
 		return ( ! empty( $datalayer_file ) && 'fileinput' === self::$datalayer_type ) ||
 				( ! empty( $datalayer_url ) && 'url' === self::$datalayer_type );
+	}
+
+	/**
+	 * Show the import sync metabox.
+	 *
+	 * @param \CMB2 $cmb The CMB2 object.
+	 *
+	 * @return bool
+	 */
+	public static function show_import_sync_metabox( $cmb ) {
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		if ( 'live' === self::$datalayer_url_type ) {
+			return false;
+		}
+
+		// Check if title field mapping is done.
+		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
+
+		return 'url' === self::$datalayer_type && 'import' === self::$datalayer_url_type && ! empty( $title_field_mapping );
 	}
 
 	/**
@@ -654,6 +744,10 @@ class Datalayers {
 	 */
 	public static function show_markers_metabox( $cmb ) {
 		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		if ( 'live' === self::$datalayer_url_type ) {
 			return false;
 		}
 
@@ -678,6 +772,10 @@ class Datalayers {
 
 		if ( self::$datalayer_fetch_error ) {
 			return false;
+		}
+
+		if ( 'live' === self::$datalayer_url_type ) {
+			return true;
 		}
 
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
@@ -916,6 +1014,9 @@ class Datalayers {
 			case 'fileinput':
 			default:
 				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
+				if ( empty( $file ) ) {
+					return [];
+				}
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
 				$data = file_get_contents( $file );
 
@@ -924,6 +1025,10 @@ class Datalayers {
 				$data = self::fetch_datalayer_url_data();
 
 				break;
+		}
+
+		if ( ! $data ) {
+			return [];
 		}
 
 		// Check if data is a WP_Error.

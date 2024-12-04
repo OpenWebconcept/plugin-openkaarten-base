@@ -47,6 +47,7 @@ class Cmb2 {
 		add_action( 'post_submitbox_start', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'add_nonce_field' ] );
 		add_action( 'cmb2_render_markerpreview', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_markerpreview_field_type' ], 10, 5 );
 		add_action( 'cmb2_render_openstreetmap', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_openstreetmap_field_type' ], 10, 5 );
+		add_action( 'cmb2_render_import_sync', [ 'Openkaarten_Base_Plugin\Admin\Cmb2', 'cmb2_render_import_sync_field_type' ], 10, 5 );
 	}
 
 	/**
@@ -109,36 +110,29 @@ class Cmb2 {
 	 */
 	public static function cmb2_render_openstreetmap_field_type( $field, $escaped_value, $object_id ) {
 
-		$datalayer_type = get_post_meta( $object_id, 'datalayer_type', true );
+		$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true );
 
-		switch ( $datalayer_type ) {
-			case 'fileinput':
-			case 'url':
-			default:
-				global $wpdb;
+		if ( 'live' === $datalayer_url_type ) {
 
-				// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
-				$datalayer_locations = $wpdb->get_results(
-					$wpdb->prepare(
-						"SELECT p.ID FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
-			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
-            WHERE p.post_type = 'owc_ok_location'
-              AND p.post_status = 'publish'
-              AND pm.meta_key = 'geometry'
-              AND pm.meta_value IS NOT NULL
-              AND pm2.meta_key = 'location_datalayer_id'
-              AND pm2.meta_value = %s
-            ORDER BY p.post_title ASC",
-						$object_id
-					)
-				);
+			// Retrieve the objects from the source file.
+			$datalayer_url        = get_post_meta( $object_id, 'datalayer_url', true );
+			$datalayer_file_input = wp_remote_get( $datalayer_url );
 
-				break;
+			if ( is_wp_error( $datalayer_file_input ) ) {
+				return;
+			}
+
+			// Get the feature collection from the source file.
+			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
+
+		} else {
+
+			// Get the feature collection from the datalayer.
+			$feature_collection = Helper::get_feature_collection_from_datalayer( $object_id );
+
 		}
 
-		if ( ! $datalayer_locations ) {
+		if ( empty( $feature_collection ) ) {
 			echo esc_html__( 'No locations found for this datalayer.', 'openkaarten-base' );
 			return;
 		}
@@ -149,66 +143,52 @@ class Cmb2 {
 		$max_long = null;
 
 		$locations = [];
-		if ( $datalayer_locations ) {
-			foreach ( $datalayer_locations as $location ) {
-				// Set min and max values for the map.
-				$geometry_object = get_post_meta( $location->ID, 'geometry' );
-				if ( ! $geometry_object ) {
-					continue;
+
+		try {
+			// Parse the feature collection.
+			$geom = geoPHP::load( $feature_collection );
+
+			// Get the bounding box of the geometry.
+			$bbox = $geom->getBBox();
+
+			// Set min and max values for the map.
+			$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
+			$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
+			$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
+			$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
+
+			// Get average lat and long for the center of the map.
+			$center_lat  = ( $min_lat + $max_lat ) / 2;
+			$center_long = ( $min_long + $max_long ) / 2;
+
+			// Loop through all the components of the geometry and add them to the locations array with the right properties.
+			foreach ( $geom->getComponents() as $component ) {
+				// Use json output to plot the geometry on the map.
+				$location_output = $component->out( 'json' );
+				$location_output = json_decode( $location_output, true );
+
+				$component_properties = $location_output['properties'];
+
+				if ( isset( $location_output['geometry'] ) ) {
+					$geometry = $location_output['geometry'];
+				} else {
+					$geometry = $location_output;
 				}
 
-				$geometry_array = json_decode( $geometry_object[0], true );
-
-				// Check if the geometry object has a type Feature wrapper or not.
-				if ( 'Feature' !== $geometry_array['type'] ) {
-					$geometry_array = [
-						'type'       => 'Feature',
-						'geometry'   => $geometry_array,
-						'propreties' => [],
-					];
-				}
-
-				// Check if type of geometry is GeometryCollection.
-				if ( 'GeometryCollection' === $geometry_array['geometry']['type'] ) {
-					if ( empty( $geometry_array['geometries'] ) || empty( $geometry_array['geometries'][0]['coordinates'] ) ) {
-						continue;
-					}
-				} elseif ( empty( $geometry_array['geometry']['coordinates'] ) ) {
-						continue;
-				}
-
-				try {
-					$geom = geoPHP::load( wp_json_encode( $geometry_array ) );
-
-					$bbox = $geom->getBBox();
-
-					$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
-					$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
-					$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
-					$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
-
-					// Get average lat and long for the center of the map.
-					$center_lat  = ( $min_lat + $max_lat ) / 2;
-					$center_long = ( $min_long + $max_long ) / 2;
-
-					$title           = get_the_title( $location->ID );
-					$location_marker = Locations::get_location_marker( $object_id, $location->ID );
-
-					$locations[] = [
-						'feature' => $geometry_array,
-						'content' => $title . '<br /><a href="' . get_edit_post_link( $location->ID ) . '" target="_blank">' . __( 'Edit location', 'openkaarten-base' ) . '</a>',
-						'icon'    => $location_marker['icon'] ? Locations::get_location_marker_url( $location_marker['icon'] ) : '',
-						'color'   => $location_marker['color'],
-					];
-
-				} catch ( \Exception $e ) {
-					// Add error message via admin notice.
-					echo esc_html__( 'The geometry is not valid and can\'t be parsed.', 'openkaarten-base' );
-					return;
-				}
+				$locations[] = [
+					'feature' => $geometry,
+					'content' => $component_properties['title'] ?: '',
+					'icon'    => $component_properties['marker']['icon'] ?: '',
+					'color'   => $component_properties['marker']['color'] ?: '',
+				];
 			}
+		} catch ( \Exception $e ) {
+			// Add error message via admin notice.
+			echo esc_html__( 'The geometry is not valid and can\'t be parsed.', 'openkaarten-base' );
+			return;
 		}
 
+		// Enqueue the OpenStreetMap script.
 		wp_localize_script(
 			'owc_ok-openstreetmap',
 			'leaflet_vars',
@@ -226,5 +206,31 @@ class Cmb2 {
 		);
 
 		echo '<div id="map-base" class="map-base"></div>';
+	}
+
+	/**
+	 * Adds a custom field type for a button to sync or import data.
+	 *
+	 * @param  object $field             The CMB2_Field type object.
+	 * @param  mixed  $escaped_value     The value of this field passed through the escaping filter.
+	 * @param  int    $object_id         The ID of the object this field is saving to.
+	 *
+	 * @return void
+	 */
+	public function cmb2_render_import_sync_field_type( $field, $escaped_value, $object_id ) {
+		$last_updated = get_post_meta( $object_id, 'datalayer_last_import', true );
+
+		// Get URL of edit post page.
+		$edit_post_url = get_edit_post_link( $object_id );
+
+		echo '<form method="post" style="margin-top:10px;">
+                <input type="hidden" name="sync_import_file" value="1">
+                <input type="hidden" name="post_id" value="' . esc_attr( $object_id ) . '">
+                <input type="hidden" name="redirect_url" value="' . esc_attr( $edit_post_url ) . '">
+                <input type="submit" name="submit_sync_import_file" class="button button-primary button-large" value="' . esc_html__( 'Sync data', 'openkaarten-base' ) . '">
+            </form>';
+
+		// translators: %s is the last updated date.
+		echo '<p>' . sprintf( esc_html__( 'Last synced at: %s', 'openkaarten-base' ), esc_attr( $last_updated ) ) . '</p>';
 	}
 }

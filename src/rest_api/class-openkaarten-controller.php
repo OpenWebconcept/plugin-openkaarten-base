@@ -11,6 +11,7 @@ namespace Openkaarten_Base_Plugin\Rest_Api;
 
 use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
+use Openkaarten_Base_Plugin\Admin\Helper;
 use Openkaarten_Base_Plugin\Admin\Locations;
 use Openkaarten_Base_Plugin\Conversion;
 
@@ -69,6 +70,8 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			10,
 			4
 		);
+
+		add_filter( 'wp_rest_cache/allowed_endpoints', [ $this, 'wprc_add_caching_endpoint' ], 10, 1 );
 	}
 
 	/**
@@ -217,7 +220,24 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 
 		$posts = [];
 		foreach ( $query_result as $post ) {
-			$posts[] = $this->prepare_item_for_response( $post, $request );
+			$post_feature = $this->prepare_item_for_response( $post, $request );
+			$post_item    = json_decode( $post_feature );
+
+			// Add title and id to post item.
+			$post_item->title = $post->post_title;
+			$post_item->id    = $post->ID;
+
+			// If $posts is a feature, i.o. a feature collection, add the features to a feature collection first.
+			if ( ! empty( $post_item ) && isset( $post_item->type ) && 'Feature' === $post_item->type ) {
+				$post_item = [
+					'type'     => 'FeatureCollection',
+					'features' => $post_item,
+					'title'    => $post->post_title,
+					'id'       => $post->ID,
+				];
+			}
+
+			$posts[] = $post_item;
 		}
 
 		$response = [
@@ -532,124 +552,41 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	public function prepare_item_for_response( $item, $request ) {
 		$output_format = $request['output_format'] ?? 'geojson';
 
-		// Get all locations which are linked to this dataset.
-		$location_args = [
-			'post_type'      => 'owc_ok_location',
-			'posts_per_page' => - 1,
-			'orderby'        => 'title',
-			'order'          => 'ASC',
-			// phpcs:ignore WordPress.DB.SlowDBQuery -- This is a valid query.
-			'meta_query'     => [
-				'relation' => 'AND',
-				[
-					'key'   => 'location_datalayer_id',
-					'value' => $item->ID,
-				],
-			],
-		];
+		$datalayer_url_type = get_post_meta( $item->ID, 'datalayer_url_type', true );
 
-		$posts_query  = new \WP_Query();
-		$query_result = $posts_query->query( $location_args );
+		if ( 'live' === $datalayer_url_type ) {
 
-		$locations = [];
-		foreach ( $query_result as $post ) {
-			$location = $this->prepare_location_for_response( $post, $request, false );
-			if ( $location ) {
-				$locations[] = $location;
+			// Retrieve the objects from the source file.
+			$datalayer_url        = get_post_meta( $item->ID, 'datalayer_url', true );
+			$datalayer_file_input = wp_remote_get( $datalayer_url );
+
+			if ( is_wp_error( $datalayer_file_input ) ) {
+				return [];
 			}
+
+			// Get the feature collection from the source file.
+			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
+
+		} else {
+
+			// Get the feature collection from the datalayer.
+			$feature_collection = Helper::get_feature_collection_from_datalayer( $item->ID );
+
 		}
 
-		$item_data = [
-			'type'     => 'FeatureCollection',
-			'id'       => $item->ID,
-			'title'    => $item->post_title,
-			'features' => $locations,
-		];
+		if ( empty( $feature_collection ) ) {
+			return [];
+		}
 
-		$item_data = wp_json_encode( $item_data );
-
+		// Parse the FeatureCollection to a geoPHP object in the requested output format.
 		try {
-			$geom = geoPHP::load( $item_data );
+			$geom = geoPHP::load( $feature_collection );
 
-			$output = $geom->out( $output_format );
-
-			return $output;
+			return $geom->out( $output_format );
 
 		} catch ( IOException $e ) {
 			return [];
 		}
-	}
-
-	/**
-	 * Prepares the query for the collection of items.
-	 *
-	 * @param \WP_POST         $item The post object.
-	 * @param \WP_REST_Request $request Full details about the request.
-	 *
-	 * @return array|false The item data.
-	 */
-	public function prepare_location_for_response( $item, $request ) {
-
-		$geometry_json = get_post_meta( $item->ID, 'geometry', true );
-		if ( ! $geometry_json ) {
-			return false;
-		}
-
-		$item_data          = json_decode( $geometry_json, true );
-		$item_data['id']    = $item->ID;
-		$item_data['title'] = get_the_title( $item->ID );
-
-		unset( $item_data['properties'] );
-
-		$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
-
-		$search  = [];
-		$replace = [];
-
-		// Get all cmb2 fields for the dataset post type.
-		$source_fields = get_post_meta( $dataset_id, 'source_fields', true );
-		if ( ! empty( $source_fields ) ) {
-			foreach ( $source_fields as $source_field ) {
-				$value     = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
-				$search[]  = '{' . $source_field['field_label'] . '}';
-				$replace[] = $value;
-
-				// Include only fields that are set to show.
-				if ( ! isset( $source_field['field_show'] ) || 'on' !== $source_field['field_show'] ) {
-					continue;
-				}
-
-				$item_data['properties'][ $source_field['field_display_label'] ] = $value;
-			}
-		}
-
-		$tooltip = get_post_meta( $dataset_id, 'tooltip', true );
-		if ( $tooltip ) {
-			foreach ( $tooltip as &$layout ) {
-				foreach ( $layout as &$field ) {
-					$field = str_replace( $search, $replace, $field );
-				}
-			}
-			$item_data['properties']['tooltip'] = $tooltip;
-		}
-
-		// Check if the post has a featured image and add it to the item data.
-		if ( get_the_post_thumbnail_url( $item->ID, 'large' ) ) {
-			$thumb_image                               = get_the_post_thumbnail_url( $item->ID, 'large' );
-			$thumb_id                                  = get_post_thumbnail_id( $item->ID );
-			$item_data['properties']['post_thumbnail'] = $this->create_image_output( $thumb_id, $thumb_image );
-		}
-
-		// Get marker information.
-		$item_marker                                = Locations::get_location_marker( $dataset_id, $item->ID );
-		$item_data['properties']['marker']['color'] = $item_marker['color'];
-		$item_data['properties']['marker']['icon']  = Locations::get_location_marker_url( $item_marker['icon'] );
-
-		if ( isset( $request['projection'] ) ) {
-			$item_data = Conversion::convert_coordinates( $item_data, $request['projection'] );
-		}
-
-		return $item_data;
 	}
 
 	/**
@@ -679,16 +616,21 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			return $served;
 		}
 
+		$request_route = $request->get_route();
+
+		// Check if the request route is the Openkaarten items route.
+		if ( ! str_contains( $request_route, 'owc/openkaarten/v1/datasets/id' ) ) {
+			return $served;
+		}
+
 		// Check if output format exists in the processor types.
-		$output_format = $request['output_format'];
+		$output_format = $request['output_format'] ?? 'geojson';
 		if ( ! empty( $output_format ) ) {
 			$processor_types = geoPHP::getAdapterMap();
 			if ( ! isset( $processor_types[ $output_format ] ) ) {
 				return false;
 			}
 		}
-
-		$output_format = $request['output_format'] ?? 'geojson';
 
 		// Different output for json and geojson, otherwise it outputs with backslashes.
 		if ( in_array( $output_format, [ 'json', 'geojson' ], true ) ) {
@@ -707,32 +649,17 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 	}
 
 	/**
-	 * Create image output.
+	 * Register endpoints to cache.
 	 *
-	 * @param int    $id The attachment ID.
-	 * @param string $image The image URL.
+	 * @param array $allowed_endpoints Array of allowed endpoints.
 	 *
-	 * @return array The image data.
+	 * @return array
 	 */
-	public function create_image_output( $id, $image ) {
-		$attachment_meta = wp_get_attachment_metadata( $id );
-		$attachment      = get_post( $id );
-
-		if ( ! $attachment_meta || ! $attachment ) {
-			return [];
+	public function wprc_add_caching_endpoint( $allowed_endpoints ) {
+		if ( ! isset( $allowed_endpoints['owc/openkaarten/v1'] ) ) {
+			$allowed_endpoints['owc/openkaarten/v1'][] = 'datasets';
 		}
 
-		$output = [
-			'id'          => $id,
-			'url'         => $image,
-			'width'       => $attachment_meta['width'],
-			'height'      => $attachment_meta['height'],
-			'filesize'    => $attachment_meta['filesize'],
-			'alt'         => get_post_meta( $id, '_wp_attachment_image_alt', true ),
-			'caption'     => wp_get_attachment_caption( $id ),
-			'description' => $attachment->post_content,
-		];
-
-		return $output;
+		return $allowed_endpoints;
 	}
 }
