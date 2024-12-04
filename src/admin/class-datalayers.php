@@ -101,6 +101,7 @@ class Datalayers {
 		}
 
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_datalayer_metaboxes' ] );
+		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_tooltip_metaboxes' ] );
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
@@ -411,10 +412,17 @@ class Datalayers {
 				'type' => 'checkbox',
 			]
 		);
+	}
 
+	/**
+	 * Add the tooltip metaboxes.
+	 *
+	 * @return void
+	 */
+	public static function add_tooltip_metaboxes() {
 		$cmb = new_cmb2_box(
 			[
-				'id'           => 'tooltip-metabox',
+				'id'           => 'tooltip_metabox',
 				'title'        => __( 'Tooltip configuration', 'openkaarten-base' ),
 				'object_types' => [ 'owc_ok_datalayer' ],
 				'show_on_cb'   => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
