@@ -229,6 +229,16 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			$post_item->title = $post->post_title;
 			$post_item->id    = $post->ID;
 
+			// If $posts is a feature, i.o. a feature collection, add the features to a feature collection first.
+			if ( ! empty( $post_item ) && isset( $post_item->type ) && 'Feature' === $post_item->type ) {
+				$post_item = [
+					'type'     => 'FeatureCollection',
+					'features' => $post_item,
+					'title'    => $post->post_title,
+					'id'       => $post->ID,
+				];
+			}
+
 			$posts[] = $post_item;
 		}
 
