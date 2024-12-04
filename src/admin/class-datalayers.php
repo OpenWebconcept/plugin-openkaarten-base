@@ -1014,9 +1014,9 @@ class Datalayers {
 			case 'fileinput':
 			default:
 				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
-                if ( empty ( $file ) ) {
-                    return [];
-                }
+				if ( empty( $file ) ) {
+					return [];
+				}
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
 				$data = file_get_contents( $file );
 
