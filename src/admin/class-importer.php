@@ -304,26 +304,13 @@ class Importer {
 		}
 
 		foreach ( $properties as $key => $value ) {
-			// Check if the key is title, then also look for title > rendered value.
-			if ( 'title' === $key ) {
-				if ( is_array( $value ) && isset( $value['rendered'] ) ) {
-					$value = $value['rendered'];
-				}
-			}
-
-			if ( is_object( $value ) ) {
-				$value = (array) $value;
-			}
-
-			if ( is_array( $value ) ) {
-				// Find the first key that has a value.
-				$second_key = array_key_first( $value );
-
-				// Look for the value if it's a multidimensional array.
-				$value = $value[ $second_key ];
+			// Skip if it's an array or object.
+			if ( is_array( $value ) || is_object( $value ) ) {
+				continue;
 			}
 
 			$value = is_null( $value ) ? '' : $value;
+
 			$title = str_replace( '{' . $key . '}', $value, $title );
 		}
 
