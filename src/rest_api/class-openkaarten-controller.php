@@ -11,6 +11,7 @@ namespace Openkaarten_Base_Plugin\Rest_Api;
 
 use geoPHP\Exception\IOException;
 use geoPHP\geoPHP;
+use Openkaarten_Base_Plugin\Admin\Helper;
 use Openkaarten_Base_Plugin\Admin\Locations;
 use Openkaarten_Base_Plugin\Conversion;
 
@@ -538,9 +539,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 
 		$datalayer_url_type = get_post_meta( $item->ID, 'datalayer_url_type', true );
 
-		// Get all locations which are linked to this dataset.
-		$locations = [];
-
 		if ( 'live' === $datalayer_url_type ) {
 
 			// Retrieve the objects from the source file.
@@ -551,46 +549,13 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 				return [];
 			}
 
+			// Get the feature collection from the source file.
 			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
 
 		} else {
 
-			// When the datalayer is set to import, get the locations from the database.
-			$location_args = [
-				'post_type'      => 'owc_ok_location',
-				'posts_per_page' => - 1,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-				// phpcs:ignore WordPress.DB.SlowDBQuery -- This is a valid query.
-				'meta_query'     => [
-					'relation' => 'AND',
-					[
-						'key'   => 'location_datalayer_id',
-						'value' => $item->ID,
-					],
-				],
-			];
-
-			$posts_query  = new \WP_Query();
-			$query_result = $posts_query->query( $location_args );
-
-			// Prepare the locations for the response.
-			foreach ( $query_result as $post ) {
-				$location = $this->prepare_location_for_response( $post, $request, 'import', $item->ID );
-				if ( $location ) {
-					$locations[] = $location;
-				}
-			}
-
-			// Create a feature collection to parse the locations to a geoPHP object.
-			$feature_collection = [
-				'type'     => 'FeatureCollection',
-				'id'       => $item->ID,
-				'title'    => $item->post_title,
-				'features' => $locations,
-			];
-
-			$feature_collection = wp_json_encode( $feature_collection );
+			// Get the feature collection from the datalayer.
+			$feature_collection = Helper::get_feature_collection_from_datalayer( $item->ID );
 
 		}
 
@@ -598,7 +563,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 			return [];
 		}
 
-		// Parse the FeatureCollection to a geoPHP object.
+		// Parse the FeatureCollection to a geoPHP object in the requested output format.
 		try {
 			$geom = geoPHP::load( $feature_collection );
 
@@ -607,86 +572,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		} catch ( IOException $e ) {
 			return [];
 		}
-	}
-
-	/**
-	 * Prepares the query for the collection of items.
-	 *
-	 * @param \WP_POST         $item The post object.
-	 * @param \WP_REST_Request $request Full details about the request.
-	 * @param string           $type The type of request.
-	 * @param int              $datalayer_id The dataset ID.
-	 *
-	 * @return array|false The item data.
-	 */
-	public function prepare_location_for_response( $item, $request, $type = 'import', $datalayer_id = null ) {
-
-		// Retrieve the geometry based on the type of request.
-		$geometry_json = get_post_meta( $item->ID, 'geometry', true );
-
-		if ( ! $geometry_json ) {
-			return false;
-		}
-
-		$item_data          = json_decode( $geometry_json, true );
-		$item_data['id']    = $item->ID;
-		$item_data['title'] = get_the_title( $item->ID );
-
-		unset( $item_data['properties'] );
-
-		$dataset_id = get_post_meta( $item->ID, 'location_datalayer_id', true );
-
-		// Add location title based on the post title.
-		$location_title                   = $item->post_title;
-		$item_data['properties']['title'] = $location_title;
-
-		$search  = [];
-		$replace = [];
-
-		// Get all cmb2 fields for the dataset post type.
-		$source_fields = get_post_meta( $dataset_id, 'source_fields', true );
-		if ( ! empty( $source_fields ) ) {
-			foreach ( $source_fields as $source_field ) {
-				$value     = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
-				$search[]  = '{' . $source_field['field_label'] . '}';
-				$replace[] = $value;
-
-				// Include only fields that are set to show.
-				if ( ! isset( $source_field['field_show'] ) || 'on' !== $source_field['field_show'] ) {
-					continue;
-				}
-
-				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $item->ID, 'field_' . $source_field['field_label'], true );
-			}
-		}
-
-		$tooltip = get_post_meta( $dataset_id, 'tooltip', true );
-		if ( $tooltip ) {
-			foreach ( $tooltip as &$layout ) {
-				foreach ( $layout as &$field ) {
-					$field = str_replace( $search, $replace, $field );
-				}
-			}
-			$item_data['properties']['tooltip'] = $tooltip;
-		}
-
-		// Check if the post has a featured image and add it to the item data.
-		if ( get_the_post_thumbnail_url( $item->ID, 'large' ) ) {
-			$thumb_image                               = get_the_post_thumbnail_url( $item->ID, 'large' );
-			$thumb_id                                  = get_post_thumbnail_id( $item->ID );
-			$item_data['properties']['post_thumbnail'] = $this->create_image_output( $thumb_id, $thumb_image );
-		}
-
-		// Get marker information.
-		$item_marker                                = Locations::get_location_marker( $dataset_id, $item->ID );
-		$item_data['properties']['marker']['color'] = $item_marker['color'];
-		$item_data['properties']['marker']['icon']  = Locations::get_location_marker_url( $item_marker['icon'] );
-
-		if ( isset( $request['projection'] ) ) {
-			$item_data = Conversion::convert_coordinates( $item_data, $request['projection'] );
-		}
-
-		return $item_data;
 	}
 
 	/**
@@ -741,36 +626,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The output is escaped in the WP_REST_Response class.
 		echo $result->get_data();
 		exit();
-	}
-
-	/**
-	 * Create image output.
-	 *
-	 * @param int    $id The attachment ID.
-	 * @param string $image The image URL.
-	 *
-	 * @return array The image data.
-	 */
-	public function create_image_output( $id, $image ) {
-		$attachment_meta = wp_get_attachment_metadata( $id );
-		$attachment      = get_post( $id );
-
-		if ( ! $attachment_meta || ! $attachment ) {
-			return [];
-		}
-
-		$output = [
-			'id'          => $id,
-			'url'         => $image,
-			'width'       => $attachment_meta['width'],
-			'height'      => $attachment_meta['height'],
-			'filesize'    => $attachment_meta['filesize'],
-			'alt'         => get_post_meta( $id, '_wp_attachment_image_alt', true ),
-			'caption'     => wp_get_attachment_caption( $id ),
-			'description' => $attachment->post_content,
-		];
-
-		return $output;
 	}
 
 	/**

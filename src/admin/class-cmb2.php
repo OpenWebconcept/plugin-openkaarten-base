@@ -112,59 +112,30 @@ class Cmb2 {
 
 		$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true );
 
-		switch ( $datalayer_url_type ) {
-			case 'live':
-				// Retrieve the objects from the source file.
-				$datalayer_url = get_post_meta( $object_id, 'datalayer_url', true );
+		if ( 'live' === $datalayer_url_type ) {
 
-				$datalayer_locations = wp_remote_get( $datalayer_url );
-				$datalayer_locations = wp_remote_retrieve_body( $datalayer_locations );
+			// Retrieve the objects from the source file.
+			$datalayer_url        = get_post_meta( $object_id, 'datalayer_url', true );
+			$datalayer_file_input = wp_remote_get( $datalayer_url );
 
-				break;
-			case 'import':
-			default:
-				global $wpdb;
+			if ( is_wp_error( $datalayer_file_input ) ) {
+				return;
+			}
 
-				// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
-				$datalayer_locations_db = $wpdb->get_results(
-					$wpdb->prepare(
-						"SELECT p.ID FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
-			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
-            WHERE p.post_type = 'owc_ok_location'
-              AND p.post_status = 'publish'
-              AND pm.meta_key = 'geometry'
-              AND pm.meta_value IS NOT NULL
-              AND pm2.meta_key = 'location_datalayer_id'
-              AND pm2.meta_value = %s
-            ORDER BY p.post_title ASC",
-						$object_id
-					)
-				);
+			// Get the feature collection from the source file.
+			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
 
-				$datalayer_locations = [];
+		} else {
 
-				foreach ( $datalayer_locations_db as $location ) {
+			// Get the feature collection from the datalayer.
+			$feature_collection = Helper::get_feature_collection_from_datalayer( $object_id );
 
-					$geometry_object = get_post_meta( $location->ID, 'geometry', true );
-
-					if ( ! $geometry_object ) {
-						continue;
-					}
-
-					$datalayer_locations[] = $geometry_object;
-				}
-
-				break;
 		}
 
-		if ( ! $datalayer_locations ) {
+		if ( empty( $feature_collection ) ) {
 			echo esc_html__( 'No locations found for this datalayer.', 'openkaarten-base' );
 			return;
 		}
-
-		$datalayer_url_type = get_post_meta( $object_id, 'datalayer_url_type', true ) ? : 'import';
 
 		$min_lat  = null;
 		$max_lat  = null;
@@ -174,8 +145,10 @@ class Cmb2 {
 		$locations = [];
 
 		try {
-			$geom = geoPHP::load( $datalayer_locations );
+			// Parse the feature collection.
+			$geom = geoPHP::load( $feature_collection );
 
+			// Get the bounding box of the geometry.
 			$bbox = $geom->getBBox();
 
 			// Set min and max values for the map.
@@ -188,15 +161,19 @@ class Cmb2 {
 			$center_lat  = ( $min_lat + $max_lat ) / 2;
 			$center_long = ( $min_long + $max_long ) / 2;
 
+			// Loop through all the components of the geometry and add them to the locations array with the right properties.
 			foreach ( $geom->getComponents() as $component ) {
+				// Use json output to plot the geometry on the map.
 				$location_output = $component->out( 'json' );
 				$location_output = json_decode( $location_output, true );
 
+				$component_properties = $location_output['properties'];
+
 				$locations[] = [
 					'feature' => $location_output['geometry'] ?: [],
-					'content' => '',
-					'icon'    => '',
-					'color'   => '',
+					'content' => $component_properties['title'] ?: '',
+					'icon'    => $component_properties['marker']['icon'] ?: '',
+					'color'   => $component_properties['marker']['color'] ?: '',
 				];
 			}
 		} catch ( \Exception $e ) {
@@ -205,6 +182,7 @@ class Cmb2 {
 			return;
 		}
 
+		// Enqueue the OpenStreetMap script.
 		wp_localize_script(
 			'owc_ok-openstreetmap',
 			'leaflet_vars',
