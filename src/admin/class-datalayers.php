@@ -694,6 +694,10 @@ class Datalayers {
 			return false;
 		}
 
+		if ( 'live' === self::$datalayer_url_type ) {
+			return false;
+		}
+
 		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
@@ -709,6 +713,14 @@ class Datalayers {
 	 * @return bool
 	 */
 	public static function show_import_sync_metabox( $cmb ) {
+		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		if ( 'live' === self::$datalayer_url_type ) {
+			return false;
+		}
+
 		// Check if title field mapping is done.
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
 
@@ -724,6 +736,10 @@ class Datalayers {
 	 */
 	public static function show_markers_metabox( $cmb ) {
 		if ( ! self::is_correct_cmb2_screen() ) {
+			return false;
+		}
+
+		if ( 'live' === self::$datalayer_url_type ) {
 			return false;
 		}
 
@@ -748,6 +764,10 @@ class Datalayers {
 
 		if ( self::$datalayer_fetch_error ) {
 			return false;
+		}
+
+		if ( 'live' === self::$datalayer_url_type ) {
+			return true;
 		}
 
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
