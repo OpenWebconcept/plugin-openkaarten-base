@@ -190,7 +190,7 @@ class Cmb2 {
 
 		// Enqueue the OpenStreetMap script.
 		wp_localize_script(
-			'owc_ok-openstreetmap',
+			'owc_ok-openstreetmap-base',
 			'leaflet_vars',
 			[
 				'mapLocations' => wp_json_encode( $locations ),
