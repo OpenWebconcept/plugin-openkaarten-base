@@ -146,15 +146,30 @@ class Admin {
 		);
 
 		wp_enqueue_style(
-			'owc_ok-openstreetmap',
-			self::mix( '/styles/openstreetmap.css' ),
+			'owc_ok-openstreetmap-base',
+			self::mix( '/styles/openstreetmap-base.css' ),
 			[],
 			OWC_OPENKAARTEN_BASE_VERSION
 		);
 
 		wp_enqueue_script(
-			'owc_ok-openstreetmap',
-			self::mix( '/scripts/openstreetmap.js' ),
+			'owc_ok-openstreetmap-base',
+			self::mix( '/scripts/openstreetmap-base.js' ),
+			[],
+			OWC_OPENKAARTEN_BASE_VERSION,
+			true
+		);
+
+		wp_enqueue_style(
+			'owc_ok-openstreetmap-geodata',
+			self::mix( '/styles/openstreetmap-geodata.css' ),
+			[],
+			OWC_OPENKAARTEN_BASE_VERSION
+		);
+
+		wp_enqueue_script(
+			'owc_ok-openstreetmap-geodata',
+			self::mix( '/scripts/openstreetmap-geodata.js' ),
 			[],
 			OWC_OPENKAARTEN_BASE_VERSION,
 			true
