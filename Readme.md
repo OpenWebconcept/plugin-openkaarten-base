@@ -35,7 +35,7 @@ If you chose for option 2 (new WordPress installation), you will probably need t
 The OpenKaarten Base plugin works best with the following plugins, which can be installed on a different WordPress installation:
 
 - [OpenKaarten Frontend](https://github.com/OpenWebconcept/plugin-openkaarten-frontend-plugin): This plugin adds a map to your WordPress website where you can show the locations of the datalayers.
-- [OpenKaarten GeoData](): This plugin adds GeoData fields to the OpenPub Items post type and creates a REST endpoint to retrieve OpenPub Items with geodata.
+- [OpenKaarten GeoData](https://github.com/OpenWebconcept/plugin-openkaarten-geodata-for-posts): This plugin adds GeoData fields to the OpenPub Items post type and creates a REST endpoint to retrieve OpenPub Items with geodata.
 
 ## Installation
 
