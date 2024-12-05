@@ -26,6 +26,10 @@ In all scenarios the OpenKaarten needs to have the following installed (and acti
 * [CMB2 Field Type: Flexible Content](https://github.com/acato-plugins/cmb2-flexible-content)
 * [OpenKaarten Base](https://github.com/OpenWebconcept/plugin-openkaarten-base)
 
+Furthermore, the OpenKaarten Base plugin needs a package with base functions to be installed. This package can be installed via composer (see instructions further on) and is called:
+
+* [OpenKaarten Base Functions](https://github.com/OpenWebconcept/package-owc-openkaarten-functions/)
+
 With this installed you can use the OpenKaarten Base plugin in your WordPress website.
 
 If you chose for option 2 (new WordPress installation), you will probably need to install a WordPress theme. Since the OpenKaarten plugin is a REST API, it can be used in any WordPress theme.
@@ -35,7 +39,7 @@ If you chose for option 2 (new WordPress installation), you will probably need t
 The OpenKaarten Base plugin works best with the following plugins, which can be installed on a different WordPress installation:
 
 - [OpenKaarten Frontend](https://github.com/OpenWebconcept/plugin-openkaarten-frontend-plugin): This plugin adds a map to your WordPress website where you can show the locations of the datalayers.
-- [OpenKaarten GeoData](): This plugin adds GeoData fields to the OpenPub Items post type and creates a REST endpoint to retrieve OpenPub Items with geodata.
+- [OpenKaarten GeoData](https://github.com/OpenWebconcept/plugin-openkaarten-geodata-for-posts): This plugin adds GeoData fields to the OpenPub Items post type and creates a REST endpoint to retrieve OpenPub Items with geodata.
 
 ## Installation
 
@@ -45,11 +49,13 @@ At this point manual installation is not supported, because of composer dependen
 
 ### Composer installation
 
-1. `composer source git@github.com:OpenWebconcept/plugin-openkaarten-base.git`
-2. `composer require acato/openkaarten-base`
-3. `cd /wp-content/plugins/openkaarten-base`
-4. `npm install && npm run build`
-5. Activate the OpenKaarten Base Plugin through the 'Plugins' menu in WordPress.
+1. `composer source git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git`
+2. `composer require acato/openkaarten-base-functions`
+3. `composer source git@github.com:OpenWebconcept/plugin-openkaarten-base.git`
+4. `composer require acato/openkaarten-base`
+5. `cd /wp-content/plugins/openkaarten-base`
+6. `npm install && npm run build`
+7. Activate the OpenKaarten Base Plugin through the 'Plugins' menu in WordPress.
 
 ## Usage
 
