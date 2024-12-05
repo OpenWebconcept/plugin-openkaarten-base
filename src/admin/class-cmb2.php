@@ -217,7 +217,7 @@ class Cmb2 {
 	 *
 	 * @return void
 	 */
-	public function cmb2_render_import_sync_field_type( $field, $escaped_value, $object_id ) {
+	public static function cmb2_render_import_sync_field_type( $field, $escaped_value, $object_id ) {
 		$last_updated = get_post_meta( $object_id, 'datalayer_last_import', true );
 
 		// Get URL of edit post page.
