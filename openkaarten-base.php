@@ -27,7 +27,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'OWC_OPENKAARTEN_BASE_VERSION', '0.1.2' );
+define( 'OWC_OPENKAARTEN_BASE_VERSION', '0.1.3' );
 
 if ( ! defined( 'OWC_OPENKAARTEN_BASE_ABSPATH' ) ) {
 	define( 'OWC_OPENKAARTEN_BASE_ABSPATH', plugin_dir_path( __FILE__ ) );
