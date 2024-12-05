@@ -10,6 +10,7 @@ In order to make the OpenKaarten Plugin work, you will need to have a WordPress 
 
 * [WordPress](https://wordpress.org/)
 * [CMB2](https://wordpress.org/plugins/cmb2/)
+* [CMB2 Field Type: Flexible Content](https://github.com/acato-plugins/cmb2-flexible-content)
 
 On this WordPress installation you will have to enable pretty permalinks (Settings > Permalinks > Select any of the options that is not plain).
 
@@ -22,11 +23,19 @@ In all scenarios the OpenKaarten needs to have the following installed (and acti
 
 * [WordPress](https://wordpress.org/)
 * [CMB2](https://wordpress.org/plugins/cmb2/)
+* [CMB2 Field Type: Flexible Content](https://github.com/acato-plugins/cmb2-flexible-content)
 * [OpenKaarten Base](https://github.com/OpenWebconcept/plugin-openkaarten-base)
 
 With this installed you can use the OpenKaarten Base plugin in your WordPress website.
 
 If you chose for option 2 (new WordPress installation), you will probably need to install a WordPress theme. Since the OpenKaarten plugin is a REST API, it can be used in any WordPress theme.
+
+## Works best with
+
+The OpenKaarten Base plugin works best with the following plugins, which can be installed on a different WordPress installation:
+
+- [OpenKaarten Frontend](https://github.com/OpenWebconcept/plugin-openkaarten-frontend-plugin): This plugin adds a map to your WordPress website where you can show the locations of the datalayers.
+- [OpenKaarten GeoData](): This plugin adds GeoData fields to the OpenPub Items post type and creates a REST endpoint to retrieve OpenPub Items with geodata.
 
 ## Installation
 
@@ -52,6 +61,12 @@ The import supports the following file extensions:
 - KML
 - XML
 
+You can add a datalayer in the following ways:
+1. Import a file: Select a file to import. The file will be uploaded, the datalayer will be created and the locations will be imported.
+2. Add a URL: Enter a URL to import a file from. The content of the URL will be downloaded, the datalayer will be created and the locations will be imported. You have the option to sync the datalayer. This will import the locations from the URL and update the locations of the datalayer.
+3. Link a live URL: Enter a URL to link a live datalayer. The datalayer will be created. The locations won't be imported. The locations will be shown directly from the source file.
+
+### GeoJSON specifications ###
 GeoJSON is the preferred format for importing datalayers.
 
 The import requires the following properties (as stated in the GeoJSON specification):
@@ -72,7 +87,7 @@ More information about the GeoJSON specification can be found [here](https://geo
 ### Adding locations
 Locations can be added in two ways:
 1. Via the dayalayer importer described above. When importing a datalayer, the locations will be added to as a location post type and will be connected to the datalayer.
-2. Manually via the WordPress admin panel. Go to the Locations menu, add a New Location, select a datalayer and fill in the required fields.
+2. Manually via the WordPress admin panel. Go to the Locations menu, add a New Location, select a datalayer and fill in the required fields. This will only work for datalayers that use the import function (either via file upload or via URL). When syncing a datalayer, the manually added locations will be removed.
 
 ### Title mapping and field mapping
 After importing a datalayer file, you can create a title mapping and field mapping for the datalayer. The title mapping is used to determine the title of the location post. The field mapping is used to determine the content of the location post.
@@ -84,6 +99,9 @@ The map markers can be customized within the datalayer post. First you can creat
 
 ### Marker icons
 The marker icons are SVG icons that are supplied by the OpenGemeenten Iconenset. More information about the icons can be found [here](https://www.opengemeenten.nl/producten/iconenset).
+
+### Tooltip ###
+For each datalayer a tooltip can be created. The tooltip can be customized by selecting the properties that should be shown in the tooltip. The tooltip will be shown in the OpenKaarten Frontend plugin map.
 
 ### Deleting datalayers and locations
 Datalayers and locations can be deleted via the WordPress admin panel. Go to the Datalayers or Locations menu, hover over the datalayer or location you want to delete and click on the 'Trash' link. If a datalayer is deleted, all connected locations will also be deleted.
@@ -145,10 +163,8 @@ Further documentation about using the REST API can be found in the [OpenKaarten 
 With the endpoint `/wp-json/owc/openkaarten/v1/datasets/id/{id}/{output_format}` you can specify an output format for a specific datalayer. The following output formats are supported:
 - `json` (default if no output format is specified)
 - `geojson`
-
-Future formats:
 - `kml`
-- `xml`
+- `gpx`
 
 ### Coordinate projection
 With the endpoint `/wp-json/owc/openkaarten/v1/datasets/id/{id}?projection=<projection>` you can specify a projection for the output for showing coordinates within a geometry object of a location. The following projections are supported:
