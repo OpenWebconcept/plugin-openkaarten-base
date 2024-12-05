@@ -146,16 +146,22 @@ class Helper {
 		$source_fields = get_post_meta( $dataset_id, 'source_fields', true );
 		if ( ! empty( $source_fields ) ) {
 			foreach ( $source_fields as $source_field ) {
-				$value     = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
-				$search[]  = '{' . $source_field['field_label'] . '}';
-				$replace[] = $value;
-
 				// Include only fields that are set to show.
 				if ( ! isset( $source_field['field_show'] ) || 'on' !== $source_field['field_show'] ) {
 					continue;
 				}
 
 				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
+
+				// Skip adding to replace if the value is an array or an object. We can't use this in the tooltip.
+				$value = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
+
+				if ( is_array( $value ) || is_object( $value ) ) {
+					continue;
+				}
+
+				$search[]  = '{' . $source_field['field_label'] . '}';
+				$replace[] = $value;
 			}
 		}
 
