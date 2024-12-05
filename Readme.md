@@ -25,6 +25,7 @@ In all scenarios the OpenKaarten needs to have the following installed (and acti
 * [CMB2](https://wordpress.org/plugins/cmb2/)
 * [CMB2 Field Type: Flexible Content](https://github.com/acato-plugins/cmb2-flexible-content)
 * [OpenKaarten Base](https://github.com/OpenWebconcept/plugin-openkaarten-base)
+* [OpenKaarten Base Functions](https://github.com/OpenWebconcept/package-owc-openkaarten-functions/)
 
 With this installed you can use the OpenKaarten Base plugin in your WordPress website.
 
