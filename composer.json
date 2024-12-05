@@ -40,11 +40,10 @@
         "composer/installers" : "~1.0",
         "richardkorthuis/geophp": "dev-development",
         "wpackagist-plugin/cmb2": "*",
-        "acato-plugins/cmb2-flexible-content": "dev-master"
-
+        "acato-plugins/cmb2-flexible-content": "dev-master",
+        "acato/openkaarten-base-functions": "dev-master"
     },
     "require-dev" : {
-        "acato/openkaarten-base-functions": "dev-master",
         "acato/wp-pre-commit-hook": "*",
         "bjornjohansen/wp-pre-commit-hook" : "*",
         "phpcompatibility/phpcompatibility-wp": "*"
