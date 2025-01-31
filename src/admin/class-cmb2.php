@@ -167,20 +167,27 @@ class Cmb2 {
 				$location_output = $component->out( 'json' );
 				$location_output = json_decode( $location_output, true );
 
-				$component_properties = $location_output['properties'];
-
 				if ( isset( $location_output['geometry'] ) ) {
 					$geometry = $location_output['geometry'];
 				} else {
 					$geometry = $location_output;
 				}
 
-				$locations[] = [
+				$location = [
 					'feature' => $geometry,
-					'content' => $component_properties['title'] ?: '',
-					'icon'    => $component_properties['marker']['icon'] ?: '',
-					'color'   => $component_properties['marker']['color'] ?: '',
+					'content' => '',
+					'icon'    => '',
+					'color'   => '',
 				];
+
+				if ( ! empty( $location_output['properties'] ) ) {
+					$component_properties = $location_output['properties'];
+					$location['content']  = $component_properties['title'] ?? '';
+					$location['icon']     = $component_properties['marker']['icon'] ?? '';
+					$location['color']    = $component_properties['marker']['color'] ?? '';
+				}
+
+				$locations[] = $location;
 			}
 		} catch ( \Exception $e ) {
 			// Add error message via admin notice.

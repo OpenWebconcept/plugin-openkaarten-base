@@ -56,6 +56,9 @@ class Admin {
 		add_action( 'manage_owc_ok_location_posts_custom_column', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'location_posts_columns' ], 10, 2 );
 		add_filter( 'manage_owc_ok_location_posts_columns', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'manage_location_posts_columns' ] );
 
+		add_action( 'manage_owc_ok_datalayer_posts_custom_column', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'datalayer_posts_columns' ], 10, 2 );
+		add_filter( 'manage_owc_ok_datalayer_posts_columns', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'manage_datalayer_posts_columns' ] );
+
 		add_action( 'save_post', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_cache_for_specific_endpoints' ], 10, 1 );
 	}
 
@@ -291,7 +294,7 @@ class Admin {
 	 * @return void
 	 */
 	public static function location_posts_columns( $column_key, $post_id ) {
-		// Add location datalayer calue as a column.
+		// Add location datalayer value as a column.
 		if ( 'location_datalayer' === $column_key ) {
 			$datalayer = get_post_meta( $post_id, 'location_datalayer_id', true );
 			if ( $datalayer ) {
@@ -301,6 +304,56 @@ class Admin {
 					esc_url( get_edit_post_link( $datalayer ) ),
 					esc_html( $datalayer_name )
 				);
+			}
+		}
+	}
+
+	/**
+	 * Add custom column to the post list.
+	 *
+	 * @param array $columns The columns.
+	 *
+	 * @return array Modified columns.
+	 */
+	public static function manage_datalayer_posts_columns( $columns ) {
+		// Add datalayer type as a column.
+		$new_columns = [
+			'datalayer_type'        => __( 'Datalayer type', 'openkaarten-base' ),
+			'datalayer_last_import' => __( 'Last import', 'openkaarten-base' ),
+		];
+
+		return array_merge( $columns, $new_columns );
+	}
+
+	/**
+	 * Add custom column to the post list.
+	 *
+	 * @param string $column_key The column key.
+	 * @param int    $post_id    The post ID.
+	 *
+	 * @return void
+	 */
+	public static function datalayer_posts_columns( $column_key, $post_id ) {
+		// Add location datalayer calue as a column.
+		if ( 'datalayer_type' === $column_key ) {
+			$datalayer_type     = get_post_meta( $post_id, 'datalayer_type', true );
+			$datalayer_url_type = get_post_meta( $post_id, 'datalayer_url_type', true );
+			if ( $datalayer_type ) {
+				echo esc_html( $datalayer_type );
+			}
+			if ( 'url' === $datalayer_type && $datalayer_url_type ) {
+				echo ' (' . esc_html( $datalayer_url_type ) . ')';
+			}
+		} elseif ( 'datalayer_last_import' === $column_key ) {
+			$datalayer_url_type = get_post_meta( $post_id, 'datalayer_url_type', true );
+
+			if ( 'live' === $datalayer_url_type ) {
+				return;
+			}
+
+			$datalayer_last_synced = get_post_meta( $post_id, 'datalayer_last_import', true );
+			if ( $datalayer_last_synced ) {
+				echo esc_html( $datalayer_last_synced );
 			}
 		}
 	}

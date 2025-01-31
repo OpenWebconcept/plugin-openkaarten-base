@@ -37,6 +37,12 @@ class Importer {
 		add_action( 'update_post_meta', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'update_post_meta' ], 5, 4 );
 		add_action( 'admin_init', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'handle_sync_import_file' ] );
 		add_action( 'admin_notices', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'show_sync_notice' ] );
+
+		// Add cronjob which syncs the locations in the datalayer every hour.
+		add_action( 'openkaarten_sync_datalayer_locations', [ 'Openkaarten_Base_Plugin\Admin\Importer', 'sync_datalayer_locations' ] );
+		if ( ! wp_next_scheduled( 'openkaarten_sync_datalayer_locations' ) ) {
+			wp_schedule_event( time(), 'hourly', 'openkaarten_sync_datalayer_locations' );
+		}
 	}
 
 	/**
@@ -191,7 +197,7 @@ class Importer {
 
 				break;
 			case 'url':
-				$data = Datalayers::fetch_datalayer_url_data();
+				$data = Datalayers::fetch_datalayer_url_data( $post_id );
 
 				break;
 		}
@@ -384,6 +390,39 @@ class Importer {
 			echo '<div class="notice notice-success is-dismissible">
 	            <p>' . esc_html__( 'Sync completed successfully!', 'openkaarten-base' ) . '</p>
 	        </div>';
+		}
+	}
+
+	/**
+	 * Sync the datalayer locations. Function is called by a cronjob.
+	 *
+	 * @return void
+	 */
+	public static function sync_datalayer_locations() {
+		// Get all datalayers which are of type url and are of url type import.
+		$args = [
+			'post_type'      => 'owc_ok_datalayer',
+			'posts_per_page' => -1,
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- We need to query on meta values.
+			'meta_query'     => [
+				[
+					'key'     => 'datalayer_url_type',
+					'value'   => 'live',
+					'compare' => '!=',
+				],
+				[
+					'key'     => 'datalayer_type',
+					'value'   => 'url',
+					'compare' => '=',
+				],
+			],
+		];
+
+		$datalayers = get_posts( $args );
+
+		foreach ( $datalayers as $datalayer ) {
+			$title_field_value = get_post_meta( $datalayer->ID, 'title_field_mapping', true );
+			self::import_locations( $datalayer->ID, $title_field_value );
 		}
 	}
 }
