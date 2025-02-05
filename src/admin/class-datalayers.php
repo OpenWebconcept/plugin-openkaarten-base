@@ -819,7 +819,7 @@ class Datalayers {
 
 				break;
 			case 'url':
-				$file_contents = self::fetch_datalayer_url_data();
+				$file_contents = self::fetch_datalayer_url_data( $object_id );
 
 				break;
 		}
@@ -959,10 +959,18 @@ class Datalayers {
 	/**
 	 * Fetch the data from an external source URL.
 	 *
+	 * @param int $datalayer_id The datalayer ID.
+	 *
 	 * @return mixed
 	 */
-	public static function fetch_datalayer_url_data() {
-		$url      = self::$datalayer_url;
+	public static function fetch_datalayer_url_data( $datalayer_id = false ) {
+		$url = self::$datalayer_url;
+
+		// Get URL when running the cron.
+		if ( defined( 'DOING_CRON' ) && DOING_CRON && $datalayer_id ) {
+			$url = get_post_meta( $datalayer_id, 'datalayer_url', true );
+		}
+
 		$response = wp_remote_get( $url );
 
 		// Check if response is a WP_Error.
@@ -1022,7 +1030,7 @@ class Datalayers {
 
 				break;
 			case 'url':
-				$data = self::fetch_datalayer_url_data();
+				$data = self::fetch_datalayer_url_data( $object_id );
 
 				break;
 		}
