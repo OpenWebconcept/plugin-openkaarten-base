@@ -230,7 +230,6 @@ class Datalayers {
 				'attributes' => [
 					'data-conditional-id'    => 'datalayer_type',
 					'data-conditional-value' => 'url',
-					'readonly'               => ! empty( self::$datalayer_url ) ? true : false,
 				],
 				'after'      => self::$datalayer_url ? '<p><a href="' . self::$datalayer_url . '" class="button" target="_blank">' . __( 'View source data', 'openkaarten-base' ) . '</a></p>' : '',
 			]
