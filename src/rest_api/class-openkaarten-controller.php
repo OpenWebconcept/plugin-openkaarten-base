@@ -581,7 +581,7 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		try {
 			$geom = geoPHP::load( $feature_collection );
 
-			// If the feature collection is a geojson, enrich the feature collection with the marker and tooltip information.
+			// If the feature collection is a geojson, enrich the feature collection with the marker and tooltip information. But only for live datalayers.
 			if ( 'live' === $datalayer_url_type && 'geojson' === $output_format ) {
 				// Try to parse the feature collection.
 				$geom_components = $geom->getComponents();

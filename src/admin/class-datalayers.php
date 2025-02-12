@@ -745,9 +745,8 @@ class Datalayers {
 
 		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
-		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
 
-		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) ) && ! empty( $title_field_mapping );
+		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) );
 	}
 
 	/**
