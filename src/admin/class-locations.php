@@ -404,4 +404,54 @@ class Locations {
 			Openkaarten_Base_Functions::save_geometry_object( $post_id, $properties );
 		}
 	}
+
+	/**
+	 * Get the location tooltip.
+	 *
+	 * @param int   $datalayer_id The datalayer ID.
+	 * @param int   $location_id The location ID.
+	 * @param array $location_data The location data.
+	 *
+	 * @return array The tooltip.
+	 */
+	public static function get_location_tooltip( $datalayer_id, $location_id = false, $location_data = false ) {
+		$tooltip = get_post_meta( $datalayer_id, 'tooltip', true );
+
+		if ( ! $tooltip ) {
+			return [];
+		}
+
+		$source_fields      = get_post_meta( $datalayer_id, 'source_fields', true );
+		$datalayer_url_type = get_post_meta( $datalayer_id, 'datalayer_url_type', true ) ? : 'import';
+
+		if ( ! empty( $source_fields ) ) {
+			foreach ( $source_fields as $source_field ) {
+				// Include only fields that are set to show.
+				if ( ! isset( $source_field['field_show'] ) || 'on' !== $source_field['field_show'] ) {
+					continue;
+				}
+
+				if ( 'live' === $datalayer_url_type ) {
+					$location_tooltip_field = $location_data[ $source_field['field_label'] ];
+				} else {
+					$location_tooltip_field = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
+				}
+
+				if ( is_array( $location_tooltip_field ) || is_object( $location_tooltip_field ) ) {
+					continue;
+				}
+
+				$search[]  = '{' . $source_field['field_label'] . '}';
+				$replace[] = $location_tooltip_field;
+			}
+		}
+
+		foreach ( $tooltip as &$layout ) {
+			foreach ( $layout as &$field ) {
+				$field = str_replace( $search, $replace, $field );
+			}
+		}
+
+		return $tooltip;
+	}
 }

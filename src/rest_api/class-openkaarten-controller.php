@@ -555,7 +555,6 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$datalayer_url_type = get_post_meta( $item->ID, 'datalayer_url_type', true );
 
 		if ( 'live' === $datalayer_url_type ) {
-
 			// Retrieve the objects from the source file.
 			$datalayer_url        = get_post_meta( $item->ID, 'datalayer_url', true );
 			$datalayer_file_input = wp_remote_get( $datalayer_url );
@@ -581,6 +580,28 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		// Parse the FeatureCollection to a geoPHP object in the requested output format.
 		try {
 			$geom = geoPHP::load( $feature_collection );
+
+			// If the feature collection is a geojson, enrich the feature collection with the marker and tooltip information.
+			if ( 'live' === $datalayer_url_type && 'geojson' === $output_format ) {
+				// Try to parse the feature collection.
+				$geom_components = $geom->getComponents();
+
+				// If the feature collection is a feature, add the marker and tooltip information.
+				foreach ( $geom_components as $geom_component ) {
+					// Get marker information.
+					$item_marker = Locations::get_location_marker( $item->ID, false, $geom_component->getData() );
+					$geom_marker = [
+						'color' => $item_marker['color'],
+						'icon'  => Locations::get_location_marker_url( $item_marker['icon'] ),
+					];
+
+					$geom_component->setData( 'marker', $geom_marker );
+					$geom_component->setData( 'tooltip', Locations::get_location_tooltip( $item->ID, false, $geom_component->getData() ) );
+				}
+
+				// Create a new geometry collection.
+				$geom = geoPHP::load( $geom_components );
+			}
 
 			return $geom->out( $output_format );
 

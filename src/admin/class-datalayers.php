@@ -702,10 +702,6 @@ class Datalayers {
 			return false;
 		}
 
-		if ( 'live' === self::$datalayer_url_type ) {
-			return false;
-		}
-
 		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
@@ -744,10 +740,6 @@ class Datalayers {
 	 */
 	public static function show_markers_metabox( $cmb ) {
 		if ( ! self::is_correct_cmb2_screen() ) {
-			return false;
-		}
-
-		if ( 'live' === self::$datalayer_url_type ) {
 			return false;
 		}
 
