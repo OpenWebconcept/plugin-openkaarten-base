@@ -241,7 +241,7 @@ class Datalayers {
 				'name'       => __( 'Datalayer URL type', 'openkaarten-base' ),
 				'id'         => 'datalayer_url_type',
 				'type'       => 'radio_inline',
-				'desc'       => __( 'Select the URL type. Select import to import locations once with the option to synchronize later and select live to retrieve the datalayers from the source directly without importing them.', 'openkaarten-base' ),
+				'desc'       => __( 'Select import to import locations: locations will be synced automatically every hour or manually with the sync button. Select live to retrieve the datalayers from the source directly without importing them.', 'openkaarten-base' ),
 				'options'    => [
 					'import' => __( 'Import', 'openkaarten-base' ),
 					'live'   => __( 'Live', 'openkaarten-base' ),
@@ -743,8 +743,8 @@ class Datalayers {
 			return false;
 		}
 
-		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
-		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
+		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
 		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) );
 	}
@@ -993,19 +993,21 @@ class Datalayers {
 	 * @return array|\WP_Error
 	 */
 	public static function get_datalayer_source_fields( $object_id ) {
-		// First try to retrieve the source fields from the postmeta.
-		$source_fields = get_post_meta( $object_id, 'source_fields', true );
+		// First try to retrieve the source fields from the postmeta. But only do this if the datalayer type is not 'live'.
+		if ( 'live' !== self::$datalayer_url_type ) {
+			$source_fields = get_post_meta( $object_id, 'source_fields', true );
 
-		if ( ! empty( $source_fields ) ) {
-			// Get all field labels from the source_fields array.
-			$source_fields = array_map(
-				function ( $field ) {
-					return $field['field_label'];
-				},
-				$source_fields
-			);
+			if ( ! empty( $source_fields ) ) {
+				// Get all field labels from the source_fields array.
+				$source_fields = array_map(
+					function ( $field ) {
+						return $field['field_label'];
+					},
+					$source_fields
+				);
 
-			return $source_fields;
+				return $source_fields;
+			}
 		}
 
 		// If no source fields are set, get the source fields from the datalayer file.
