@@ -90,11 +90,49 @@ class Importer {
 	 * @return void
 	 */
 	public static function update_post_meta( $meta_id, $post_id, $meta_key, $meta_value ) {
-		if ( 'title_field_mapping' !== $meta_key ) {
-			return;
-		}
+		if ( 'title_field_mapping' === $meta_key ) {
+			self::import_geo_file( $post_id, $meta_key, $meta_value );
+		} elseif ( 'datalayer_url' === $meta_key ) {
+			// Delete title field mapping.
+			delete_post_meta( $post_id, 'title_field_mapping' );
 
-		self::import_geo_file( $post_id, $meta_key, $meta_value );
+			// Delete last import date.
+			delete_post_meta( $post_id, 'datalayer_last_import' );
+
+			// Delete source fields.
+			delete_post_meta( $post_id, 'source_fields' );
+
+			// Delete locations.
+			Datalayers::delete_datalayer_locations( $post_id );
+
+			// Clear POST data.
+			//phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to unset the POST data.
+			if ( isset( $_POST['sync_import_file'] ) ) {
+				unset( $_POST['sync_import_file'] );
+			}
+			//phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to unset the POST data.
+			if ( isset( $_POST['source_fields'] ) ) {
+				unset( $_POST['source_fields'] );
+			}
+
+			// Force set datalayer_file_id, otherwise source fields can't be retrieved.
+			update_post_meta( $post_id, 'datalayer_file_id', $meta_value );
+
+			// Retrieve the property for the title field mapping.
+			$source_fields = Datalayers::get_datalayer_source_fields( $post_id, 'url', 'import' );
+
+			if ( ! empty( $source_fields ) ) {
+				$title_fields = '{' . $source_fields[0] . '}';
+			} else {
+				$title_fields = '{title}';
+			}
+
+			// Set the title field mapping.
+			update_post_meta( $post_id, 'title_field_mapping', $title_fields );
+
+			// Import the locations.
+			self::import_locations( $post_id, $title_fields );
+		}
 	}
 
 	/**

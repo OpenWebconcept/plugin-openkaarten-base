@@ -988,12 +988,17 @@ class Datalayers {
 	 * Get the source fields from the datalayer URL.
 	 *
 	 * @param int|string $object_id The object ID.
+	 * @param string     $override_datalayer_type The datalayer type.
+	 * @param string     $override_datalayer_url_type The datalayer URL type.
 	 *
 	 * @return array|\WP_Error
 	 */
-	public static function get_datalayer_source_fields( $object_id ) {
+	public static function get_datalayer_source_fields( $object_id, $override_datalayer_type = false, $override_datalayer_url_type = false ) {
+		$datalayer_type     = $override_datalayer_type ? : self::$datalayer_type;
+		$datalayer_url_type = $override_datalayer_url_type ? : self::$datalayer_url_type;
+
 		// First try to retrieve the source fields from the postmeta. But only do this if the datalayer type is not 'live'.
-		if ( 'live' !== self::$datalayer_url_type ) {
+		if ( 'live' !== $datalayer_url_type ) {
 			$source_fields = get_post_meta( $object_id, 'source_fields', true );
 
 			if ( ! empty( $source_fields ) ) {
@@ -1010,10 +1015,11 @@ class Datalayers {
 		}
 
 		// If no source fields are set, get the source fields from the datalayer file.
-		switch ( self::$datalayer_type ) {
+		switch ( $datalayer_type ) {
 			case 'fileinput':
 			default:
 				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
+
 				if ( empty( $file ) ) {
 					return [];
 				}
