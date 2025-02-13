@@ -226,7 +226,8 @@ class Datalayers {
 				'name'       => __( 'Datalayer URL', 'openkaarten-base' ),
 				'id'         => 'datalayer_url',
 				'type'       => 'text_url',
-				'desc'       => __( 'Insert a valid URL. The URL must be accessible by the server and the output has to be a supported format: JSON, geoJSON, KML or XML.', 'openkaarten-base' ),
+				'desc'       => __( 'Insert a valid URL. The URL must be accessible by the server and the output has to be a supported format: JSON, geoJSON, KML or XML.', 'openkaarten-base' ) .
+								'<br /><span style="color: red;"><strong>' . __( 'Be aware: updating this field will automatically reset the title field mapping and the field mapping and will remove and re-import all locations for the import URL type datalayers.', 'openkaarten-base' ) . '</strong></span>',
 				'attributes' => [
 					'data-conditional-id'    => 'datalayer_type',
 					'data-conditional-value' => 'url',
@@ -949,12 +950,13 @@ class Datalayers {
 	/**
 	 * Fetch the data from an external source URL.
 	 *
-	 * @param int $datalayer_id The datalayer ID.
+	 * @param int    $datalayer_id The datalayer ID.
+	 * @param string $override_datalayer_url The overridden datalayer URL. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
 	 *
 	 * @return mixed
 	 */
-	public static function fetch_datalayer_url_data( $datalayer_id = false ) {
-		$url = self::$datalayer_url;
+	public static function fetch_datalayer_url_data( $datalayer_id = false, $override_datalayer_url = '' ) {
+		$url = $override_datalayer_url ? : self::$datalayer_url;
 
 		// Get URL when running the cron.
 		if ( defined( 'DOING_CRON' ) && DOING_CRON && $datalayer_id ) {
@@ -988,12 +990,13 @@ class Datalayers {
 	 * Get the source fields from the datalayer URL.
 	 *
 	 * @param int|string $object_id The object ID.
-	 * @param string     $override_datalayer_type The datalayer type.
-	 * @param string     $override_datalayer_url_type The datalayer URL type.
+	 * @param string     $override_datalayer_type The overridden datalayer type. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
+	 * @param string     $override_datalayer_url_type The overridden datalayer URL type. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
+	 * @param string     $override_datalayer_url The overridden datalayer URL. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
 	 *
 	 * @return array|\WP_Error
 	 */
-	public static function get_datalayer_source_fields( $object_id, $override_datalayer_type = false, $override_datalayer_url_type = false ) {
+	public static function get_datalayer_source_fields( $object_id, $override_datalayer_type = false, $override_datalayer_url_type = false, $override_datalayer_url = '' ) {
 		$datalayer_type     = $override_datalayer_type ? : self::$datalayer_type;
 		$datalayer_url_type = $override_datalayer_url_type ? : self::$datalayer_url_type;
 
@@ -1028,7 +1031,7 @@ class Datalayers {
 
 				break;
 			case 'url':
-				$data = self::fetch_datalayer_url_data( $object_id );
+				$data = self::fetch_datalayer_url_data( $object_id, $override_datalayer_url );
 
 				break;
 		}
