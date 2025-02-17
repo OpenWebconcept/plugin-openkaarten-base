@@ -432,7 +432,7 @@ class Locations {
 				}
 
 				if ( 'live' === $datalayer_url_type ) {
-					$location_tooltip_field = $location_data[ $source_field['field_label'] ];
+					$location_tooltip_field = $location_data[ $source_field['field_label'] ] ?? '';
 				} else {
 					$location_tooltip_field = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
 				}
