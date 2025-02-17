@@ -90,11 +90,109 @@ class Importer {
 	 * @return void
 	 */
 	public static function update_post_meta( $meta_id, $post_id, $meta_key, $meta_value ) {
-		if ( 'title_field_mapping' !== $meta_key ) {
-			return;
-		}
+		if ( 'title_field_mapping' === $meta_key ) {
 
-		self::import_geo_file( $post_id, $meta_key, $meta_value );
+			self::import_geo_file( $post_id, $meta_key, $meta_value );
+
+		} elseif ( 'datalayer_url' === $meta_key ) {
+
+			//phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to check the POST data.
+			$datalayer_url_type = isset( $_POST['datalayer_url_type'] ) ? sanitize_text_field( wp_unslash( $_POST['datalayer_url_type'] ) ) : null;
+
+			if ( empty( $datalayer_url_type ) ) {
+				return;
+			}
+
+			// Delete title field mapping.
+			delete_post_meta( $post_id, 'title_field_mapping' );
+
+			// Delete last import date.
+			delete_post_meta( $post_id, 'datalayer_last_import' );
+
+			// Delete source fields.
+			delete_post_meta( $post_id, 'source_fields' );
+
+			// Delete locations.
+			Datalayers::delete_datalayer_locations( $post_id );
+
+			// Clear POST data.
+			//phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to unset the POST data.
+			if ( isset( $_POST['sync_import_file'] ) ) {
+				unset( $_POST['sync_import_file'] );
+			}
+			//phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to unset the POST data.
+			if ( isset( $_POST['source_fields'] ) ) {
+				unset( $_POST['source_fields'] );
+			}
+			//phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to unset the POST data.
+			if ( isset( $_POST['title_field_mapping'] ) ) {
+				unset( $_POST['title_field_mapping'] );
+			}
+
+			// Retrieve the property for the title field mapping.
+			$source_fields = Datalayers::get_datalayer_source_fields(
+				$post_id,
+				'url',
+				$datalayer_url_type,
+				$meta_value
+			);
+
+			if ( ! empty( $source_fields ) ) {
+				$title_fields = '{' . $source_fields[0] . '}';
+			} else {
+				$title_fields = '{title}';
+			}
+
+			// Don't use update_post_meta but save it directly to the database.
+			// This is because the update_post_meta function will trigger the import and we don't want that here.
+			global $wpdb;
+
+			//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom query is required here.
+			$wpdb->insert(
+				$wpdb->postmeta,
+				[
+					//phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- We need to insert the meta value.
+					'meta_value' => $title_fields,
+					'post_id'    => $post_id,
+					//phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- We need to insert the meta key.
+					'meta_key'   => 'title_field_mapping',
+				]
+			);
+
+			// Update the field mapping and set all source fields to show.
+			if ( ! empty( $source_fields ) ) {
+				$source_fields_db = [];
+				foreach ( $source_fields as $field ) {
+					add_post_meta( $post_id, 'field_' . $field . '_type', 'text' );
+					add_post_meta( $post_id, 'field_' . $field, $field );
+					add_post_meta( $post_id, 'field_' . $field . '_show', '1' );
+					add_post_meta( $post_id, 'field_' . $field . '_required', '0' );
+					$source_fields_db[] = [
+						'field_label'         => $field,
+						'field_display_label' => $field,
+						'field_type'          => 'text',
+						'field_show'          => 1,
+						'field_required'      => 0,
+					];
+				}
+			}
+
+			// Update the source fields.
+			update_post_meta( $post_id, 'source_fields', $source_fields_db );
+
+			// Import the locations.
+			if ( 'import' === $datalayer_url_type ) {
+				self::import_locations( $post_id, $title_fields );
+			}
+
+			// Redirect to avoid executing other actions.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to check the POST data.
+			if ( isset( $_POST['_wp_http_referer'] ) ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to check the POST data.
+				wp_safe_redirect( sanitize_url( wp_unslash( $_POST['_wp_http_referer'] ) ) );
+				exit;
+			}
+		}
 	}
 
 	/**

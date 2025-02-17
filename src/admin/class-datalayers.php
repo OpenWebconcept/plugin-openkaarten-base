@@ -226,11 +226,11 @@ class Datalayers {
 				'name'       => __( 'Datalayer URL', 'openkaarten-base' ),
 				'id'         => 'datalayer_url',
 				'type'       => 'text_url',
-				'desc'       => __( 'Insert a valid URL. The URL must be accessible by the server and the output has to be a supported format: JSON, geoJSON, KML or XML.', 'openkaarten-base' ),
+				'desc'       => __( 'Insert a valid URL. The URL must be accessible by the server and the output has to be a supported format: JSON, geoJSON, KML or XML.', 'openkaarten-base' ) .
+								'<br /><span style="color: red;"><strong>' . __( 'Be aware: updating this field will automatically reset the title field mapping and the field mapping and will remove and re-import all locations for the import URL type datalayers.', 'openkaarten-base' ) . '</strong></span>',
 				'attributes' => [
 					'data-conditional-id'    => 'datalayer_type',
 					'data-conditional-value' => 'url',
-					'readonly'               => ! empty( self::$datalayer_url ) ? true : false,
 				],
 				'after'      => self::$datalayer_url ? '<p><a href="' . self::$datalayer_url . '" class="button" target="_blank">' . __( 'View source data', 'openkaarten-base' ) . '</a></p>' : '',
 			]
@@ -241,7 +241,7 @@ class Datalayers {
 				'name'       => __( 'Datalayer URL type', 'openkaarten-base' ),
 				'id'         => 'datalayer_url_type',
 				'type'       => 'radio_inline',
-				'desc'       => __( 'Select the URL type. Select import to import locations once with the option to synchronize later and select live to retrieve the datalayers from the source directly without importing them.', 'openkaarten-base' ),
+				'desc'       => __( 'Select import to import locations: locations will be synced automatically every hour or manually with the sync button. Select live to retrieve the datalayers from the source directly without importing them.', 'openkaarten-base' ),
 				'options'    => [
 					'import' => __( 'Import', 'openkaarten-base' ),
 					'live'   => __( 'Live', 'openkaarten-base' ),
@@ -702,10 +702,6 @@ class Datalayers {
 			return false;
 		}
 
-		if ( 'live' === self::$datalayer_url_type ) {
-			return false;
-		}
-
 		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
 		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
@@ -747,15 +743,10 @@ class Datalayers {
 			return false;
 		}
 
-		if ( 'live' === self::$datalayer_url_type ) {
-			return false;
-		}
+		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
+		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 
-		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
-		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
-		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
-
-		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) ) && ! empty( $title_field_mapping );
+		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) );
 	}
 
 	/**
@@ -959,12 +950,13 @@ class Datalayers {
 	/**
 	 * Fetch the data from an external source URL.
 	 *
-	 * @param int $datalayer_id The datalayer ID.
+	 * @param int    $datalayer_id The datalayer ID.
+	 * @param string $override_datalayer_url The overridden datalayer URL. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
 	 *
 	 * @return mixed
 	 */
-	public static function fetch_datalayer_url_data( $datalayer_id = false ) {
-		$url = self::$datalayer_url;
+	public static function fetch_datalayer_url_data( $datalayer_id = false, $override_datalayer_url = '' ) {
+		$url = $override_datalayer_url ? : self::$datalayer_url;
 
 		// Get URL when running the cron.
 		if ( defined( 'DOING_CRON' ) && DOING_CRON && $datalayer_id ) {
@@ -998,30 +990,39 @@ class Datalayers {
 	 * Get the source fields from the datalayer URL.
 	 *
 	 * @param int|string $object_id The object ID.
+	 * @param string     $override_datalayer_type The overridden datalayer type. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
+	 * @param string     $override_datalayer_url_type The overridden datalayer URL type. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
+	 * @param string     $override_datalayer_url The overridden datalayer URL. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
 	 *
 	 * @return array|\WP_Error
 	 */
-	public static function get_datalayer_source_fields( $object_id ) {
-		// First try to retrieve the source fields from the postmeta.
-		$source_fields = get_post_meta( $object_id, 'source_fields', true );
+	public static function get_datalayer_source_fields( $object_id, $override_datalayer_type = false, $override_datalayer_url_type = false, $override_datalayer_url = '' ) {
+		$datalayer_type     = $override_datalayer_type ? : self::$datalayer_type;
+		$datalayer_url_type = $override_datalayer_url_type ? : self::$datalayer_url_type;
 
-		if ( ! empty( $source_fields ) ) {
-			// Get all field labels from the source_fields array.
-			$source_fields = array_map(
-				function ( $field ) {
-					return $field['field_label'];
-				},
-				$source_fields
-			);
+		// First try to retrieve the source fields from the postmeta. But only do this if the datalayer type is not 'live'.
+		if ( 'live' !== $datalayer_url_type ) {
+			$source_fields = get_post_meta( $object_id, 'source_fields', true );
 
-			return $source_fields;
+			if ( ! empty( $source_fields ) ) {
+				// Get all field labels from the source_fields array.
+				$source_fields = array_map(
+					function ( $field ) {
+						return $field['field_label'];
+					},
+					$source_fields
+				);
+
+				return $source_fields;
+			}
 		}
 
 		// If no source fields are set, get the source fields from the datalayer file.
-		switch ( self::$datalayer_type ) {
+		switch ( $datalayer_type ) {
 			case 'fileinput':
 			default:
 				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
+
 				if ( empty( $file ) ) {
 					return [];
 				}
@@ -1030,7 +1031,7 @@ class Datalayers {
 
 				break;
 			case 'url':
-				$data = self::fetch_datalayer_url_data( $object_id );
+				$data = self::fetch_datalayer_url_data( $object_id, $override_datalayer_url );
 
 				break;
 		}
