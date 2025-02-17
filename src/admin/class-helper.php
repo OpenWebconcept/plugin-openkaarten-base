@@ -67,13 +67,21 @@ class Helper {
 	public static function get_feature_collection_from_datalayer( $datalayer_id ) {
 		global $wpdb;
 
-		$datalayer = get_post( $datalayer_id );
+		$datalayer          = get_post( $datalayer_id );
+		$datalayer_type     = get_post_meta( $datalayer_id, 'datalayer_type', true );
+		$datalayer_url_type = get_post_meta( $datalayer_id, 'datalayer_url_type', true );
 
-		// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
-		$datalayer_locations_db = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT p.ID FROM {$wpdb->posts} p
+		if ( 'url' === $datalayer_type && 'live' === $datalayer_url_type ) {
+
+			$datalayer_url = get_post_meta( $datalayer_id, 'datalayer_url', true );
+
+		} else {
+
+			// Create a custom query to get the location ID's, order by title ASC, where the geometry exists and the location_datalayer_id is equal to the object ID.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
+			$datalayer_locations_db = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT p.ID FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
 			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
             WHERE p.post_type = 'owc_ok_location'
@@ -83,9 +91,10 @@ class Helper {
               AND pm2.meta_key = 'location_datalayer_id'
               AND pm2.meta_value = %s
             ORDER BY p.post_title ASC",
-				$datalayer_id
-			)
-		);
+					$datalayer_id
+				)
+			);
+		}
 
 		$datalayer_locations = [];
 
@@ -139,9 +148,6 @@ class Helper {
 		$location_title                   = $location->post_title;
 		$item_data['properties']['title'] = $location_title;
 
-		$search  = [];
-		$replace = [];
-
 		// Get all cmb2 fields for the dataset post type.
 		$source_fields = get_post_meta( $dataset_id, 'source_fields', true );
 		if ( ! empty( $source_fields ) ) {
@@ -152,28 +158,11 @@ class Helper {
 				}
 
 				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
-
-				// Skip adding to replace if the value is an array or an object. We can't use this in the tooltip.
-				$value = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
-
-				if ( is_array( $value ) || is_object( $value ) ) {
-					continue;
-				}
-
-				$search[]  = '{' . $source_field['field_label'] . '}';
-				$replace[] = $value;
 			}
 		}
 
-		$tooltip = get_post_meta( $dataset_id, 'tooltip', true );
-		if ( $tooltip ) {
-			foreach ( $tooltip as &$layout ) {
-				foreach ( $layout as &$field ) {
-					$field = str_replace( $search, $replace, $field );
-				}
-			}
-			$item_data['properties']['tooltip'] = $tooltip;
-		}
+		// Get tooltip information.
+		$item_data['properties']['tooltip'] = Locations::get_location_tooltip( $dataset_id, $location_id );
 
 		// Check if the post has a featured image and add it to the item data.
 		if ( get_the_post_thumbnail_url( $location_id, 'large' ) ) {

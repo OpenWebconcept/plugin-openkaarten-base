@@ -181,10 +181,29 @@ class Cmb2 {
 				];
 
 				if ( ! empty( $location_output['properties'] ) ) {
-					$component_properties = $location_output['properties'];
-					$location['content']  = $component_properties['title'] ?? '';
-					$location['icon']     = $component_properties['marker']['icon'] ?? '';
-					$location['color']    = $component_properties['marker']['color'] ?? '';
+
+					// Get location properties.
+					$location_properties = $location_output['properties'];
+					if ( 'live' === $datalayer_url_type ) {
+						$location_data_for_marker = $location_output['properties'];
+					} else {
+						$location_data_for_marker = $location_output;
+					}
+
+					// Get marker information.
+					$item_marker = Locations::get_location_marker( $object_id, false, $location_data_for_marker );
+					$geom_marker = [
+						'color' => $item_marker['color'],
+						'icon'  => Locations::get_location_marker_url( $item_marker['icon'] ),
+					];
+
+					// Get title information based on title field mapping.
+					$title_fields = get_post_meta( $object_id, 'title_field_mapping', true );
+					$title = Importer::create_title_from_mapping( $location_properties, $title_fields );
+
+					$location['content'] = $title;
+					$location['icon']    = $geom_marker['icon'] ?? '';
+					$location['color']   = $geom_marker['color'] ?? '';
 				}
 
 				$locations[] = $location;
