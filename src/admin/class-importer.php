@@ -185,6 +185,18 @@ class Importer {
 				self::import_locations( $post_id, $title_fields );
 			}
 
+			// Force update the datalayer url, but without update_post_meta, because this will create an infinite loop.
+			$wpdb->update(
+				$wpdb->postmeta,
+				[
+					'meta_value' => $meta_value,
+				],
+				[
+					'post_id'  => $post_id,
+					'meta_key' => 'datalayer_url',
+				]
+			);
+
 			// Redirect to avoid executing other actions.
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- We need to check the POST data.
 			if ( isset( $_POST['_wp_http_referer'] ) ) {
