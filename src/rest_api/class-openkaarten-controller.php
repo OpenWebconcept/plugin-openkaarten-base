@@ -583,29 +583,21 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 
 			// If the feature collection is a geojson, enrich the feature collection with the marker and tooltip information. But only for live datalayers.
 			if ( 'live' === $datalayer_url_type && 'geojson' === $output_format ) {
-				// Check if marker information or tooltip information is provided.
-				$markers = get_post_meta( $item->ID, 'markers', true );
 				$tooltip = get_post_meta( $item->ID, 'tooltip', true );
-
-				if ( empty( $markers ) && empty( $tooltip ) ) {
-					return $geom->out( $output_format );
-				}
 
 				// Try to parse the feature collection.
 				$geom_components = $geom->getComponents();
 
 				// If the feature collection is a feature, add the marker and tooltip information.
 				foreach ( $geom_components as $geom_component ) {
-					if ( ! empty( $markers ) ) {
-						// Get marker information.
-						$item_marker = Locations::get_location_marker( $item->ID, false, $geom_component->getData() );
-						$geom_marker = [
-							'color' => $item_marker['color'],
-							'icon'  => Locations::get_location_marker_url( $item_marker['icon'] ),
-						];
+					// Get marker information.
+					$item_marker = Locations::get_location_marker( $item->ID, false, $geom_component->getData() );
+					$geom_marker = [
+						'color' => $item_marker['color'],
+						'icon'  => Locations::get_location_marker_url( $item_marker['icon'] ),
+					];
 
-						$geom_component->setData( 'marker', $geom_marker );
-					}
+					$geom_component->setData( 'marker', $geom_marker );
 
 					if ( ! empty( $tooltip ) ) {
 						$geom_component->setData( 'tooltip', Locations::get_location_tooltip( $item->ID, false, $geom_component->getData() ) );
