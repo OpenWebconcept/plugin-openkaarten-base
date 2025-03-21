@@ -255,6 +255,7 @@ class Admin {
 			'has_archive'  => false,
 			'rewrite'      => [ 'slug' => 'location' ],
 			'show_in_rest' => true,
+            'publicly_queryable' => true,
 		];
 
 		register_post_type( 'owc_ok_location', $args );
