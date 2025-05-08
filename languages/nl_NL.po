@@ -1,0 +1,583 @@
+# Copyright (C) 2025 Acato
+# This file is distributed under the EUPL-1.2.
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenKaarten Base 0.1.2\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/openkaarten-"
+"base\n"
+"POT-Creation-Date: 2025-05-08T12:35:55+00:00\n"
+"PO-Revision-Date: 2025-05-08 14:53+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.6\n"
+"X-Domain: openkaarten-base\n"
+
+#. Plugin Name of the plugin
+#: openkaarten-base.php
+msgid "OpenKaarten Base"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: openkaarten-base.php
+msgid "https://www.openwebconcept.nl"
+msgstr ""
+
+#. Description of the plugin
+#: openkaarten-base.php
+msgid "The OpenKaarten Base plugin."
+msgstr ""
+
+#. Author of the plugin
+#: openkaarten-base.php
+msgid "Acato"
+msgstr ""
+
+#. Author URI of the plugin
+#: openkaarten-base.php
+msgid "https://www.acato.nl"
+msgstr ""
+
+#: src/admin/class-admin.php:216
+msgid ""
+"The plugin OpenKaarten Base requires CMB2 plugin and CMB2 Field Type: "
+"Flexible Content plugin to be installed and activated. The plugin has been "
+"deactivated."
+msgstr ""
+
+#: src/admin/class-admin.php:230 src/admin/class-admin.php:232
+#: src/admin/class-datalayers.php:648
+msgid "Locations"
+msgstr "Locaties"
+
+#: src/admin/class-admin.php:231 src/admin/class-admin.php:233
+msgid "Location"
+msgstr "Locatie"
+
+#: src/admin/class-admin.php:234
+msgid "Add New"
+msgstr "Voeg nieuwe toe"
+
+#: src/admin/class-admin.php:235
+msgid "Add New Location"
+msgstr "Voeg nieuwe locatie toe"
+
+#: src/admin/class-admin.php:236
+msgid "New Location"
+msgstr "Nieuwe locatie"
+
+#: src/admin/class-admin.php:237
+msgid "Edit Location"
+msgstr "Bewerk locatie"
+
+#: src/admin/class-admin.php:238
+msgid "View Location"
+msgstr "Bekijk locatie"
+
+#: src/admin/class-admin.php:239
+msgid "All Locations"
+msgstr "Alle locaties"
+
+#: src/admin/class-admin.php:240
+msgid "Search Locations"
+msgstr "Zoek locaties"
+
+#: src/admin/class-admin.php:241
+msgid "Parent Locations:"
+msgstr "Hoofd locaties:"
+
+#: src/admin/class-admin.php:242
+msgid "No maps found."
+msgstr "Geen kaarten gevonden"
+
+#: src/admin/class-admin.php:243
+msgid "No maps found in Trash."
+msgstr "Geen kaarten gevonden in prullenbak"
+
+#: src/admin/class-admin.php:282 src/admin/class-datalayers.php:161
+#: src/admin/class-locations.php:132
+msgid "Datalayer"
+msgstr ""
+
+#: src/admin/class-admin.php:321
+msgid "Datalayer type"
+msgstr ""
+
+#: src/admin/class-admin.php:322
+msgid "Last import"
+msgstr "Laatste import"
+
+#: src/admin/class-cmb2.php:82 src/admin/class-cmb2.php:90
+msgid "No marker preview available"
+msgstr "Geen marker voorbeeld beschikbaar"
+
+#: src/admin/class-cmb2.php:136
+msgid "No locations found for this datalayer."
+msgstr "Geen locaties gevonden voor deze datalader"
+
+#: src/admin/class-cmb2.php:213
+msgid "The geometry is not valid and can't be parsed."
+msgstr "De geometrie is ongeldig en kan niet worden geparseerd."
+
+#: src/admin/class-cmb2.php:256
+msgid "Sync data"
+msgstr ""
+
+#. translators: %s is the last updated date.
+#: src/admin/class-cmb2.php:260
+msgid "Last synced at: %s"
+msgstr "Laatst gesynced om: %s"
+
+#: src/admin/class-datalayers.php:118
+msgctxt "post type general name"
+msgid "Datalayers"
+msgstr ""
+
+#: src/admin/class-datalayers.php:119
+msgctxt "post type singular name"
+msgid "Datalayer"
+msgstr ""
+
+#: src/admin/class-datalayers.php:120
+msgctxt "admin menu"
+msgid "Datalayers"
+msgstr ""
+
+#: src/admin/class-datalayers.php:121
+msgctxt "add new on admin bar"
+msgid "Datalayer"
+msgstr ""
+
+#: src/admin/class-datalayers.php:122
+msgctxt "datalayer"
+msgid "Add New"
+msgstr "Voeg nieuwe toe"
+
+#: src/admin/class-datalayers.php:123
+msgid "Add New Datalayer"
+msgstr "Voeg nieuwe Datalayer toe"
+
+#: src/admin/class-datalayers.php:124
+msgid "New Datalayer"
+msgstr "Nieuwe Datalayer"
+
+#: src/admin/class-datalayers.php:125
+msgid "Edit Datalayer"
+msgstr "Bewerk Datalayer"
+
+#: src/admin/class-datalayers.php:126
+msgid "View Datalayer"
+msgstr "Bekijk Datalayer"
+
+#: src/admin/class-datalayers.php:127
+msgid "All Datalayers"
+msgstr "Alle Datalayers"
+
+#: src/admin/class-datalayers.php:128
+msgid "Search Datalayers"
+msgstr "Zoek Datalayers"
+
+#: src/admin/class-datalayers.php:129
+msgid "Parent Datalayers:"
+msgstr "Hoofd Datalayers:"
+
+#: src/admin/class-datalayers.php:130
+msgid "No datalayers found."
+msgstr "Geen datalayers gevonden"
+
+#: src/admin/class-datalayers.php:131
+msgid "No datalayers found in Trash."
+msgstr "Geen datalayers gevonden in prullenbak"
+
+#: src/admin/class-datalayers.php:136
+msgid "Description."
+msgstr "Beschrijving"
+
+#: src/admin/class-datalayers.php:169
+msgid "Datalayer Type"
+msgstr ""
+
+#: src/admin/class-datalayers.php:173
+msgid "File"
+msgstr ""
+
+#: src/admin/class-datalayers.php:174 src/admin/class-datalayers.php:370
+msgid "URL"
+msgstr ""
+
+#: src/admin/class-datalayers.php:185
+msgid "Datalayer File"
+msgstr ""
+
+#: src/admin/class-datalayers.php:226
+msgid "Datalayer URL"
+msgstr ""
+
+#: src/admin/class-datalayers.php:229
+msgid ""
+"Insert a valid URL. The URL must be accessible by the server and the output "
+"has to be a supported format: JSON, geoJSON, KML or XML."
+msgstr ""
+"Voer een geldige URL in. De URL moet toegankelijk zijn voor de server en de "
+"uitvoer moet een ondersteund formaat hebben: JSON, geoJSON, KML of XML."
+
+#: src/admin/class-datalayers.php:230
+msgid ""
+"Be aware: updating this field will automatically reset the title field "
+"mapping and the field mapping and will remove and re-import all locations "
+"for the import URL type datalayers."
+msgstr ""
+"Let op: als u dit veld bijwerkt, worden de veldtoewijzingen voor de titel "
+"en de veldtoewijzing automatisch opnieuw ingesteld. Ook worden alle "
+"locaties voor de datalagen van het type import-URL verwijderd en opnieuw "
+"geïmporteerd."
+
+#: src/admin/class-datalayers.php:235
+msgid "View source data"
+msgstr "Bekijk source data"
+
+#: src/admin/class-datalayers.php:241
+msgid "Datalayer URL type"
+msgstr ""
+
+#: src/admin/class-datalayers.php:244
+msgid ""
+"Select import to import locations: locations will be synced automatically "
+"every hour or manually with the sync button. Select live to retrieve the "
+"datalayers from the source directly without importing them."
+msgstr ""
+"Selecteer 'Importeren' om locaties te importeren: locaties worden elk uur "
+"automatisch gesynchroniseerd of handmatig met de synchronisatieknop. "
+"Selecteer 'Live' om de datalagen rechtstreeks uit de bron op te halen "
+"zonder ze te importeren."
+
+#: src/admin/class-datalayers.php:246
+msgid "Import"
+msgstr ""
+
+#: src/admin/class-datalayers.php:247
+msgid "Live"
+msgstr ""
+
+#: src/admin/class-datalayers.php:260 src/admin/class-datalayers.php:268
+msgid "Datalayer Import"
+msgstr ""
+
+#: src/admin/class-datalayers.php:281 src/admin/class-datalayers.php:315
+#: src/admin/class-datalayers.php:323
+msgid "Title field mapping"
+msgstr ""
+
+#. translators: %s: source fields.
+#: src/admin/class-datalayers.php:327
+msgid ""
+"Use the source fields to compose the title of a location. Place the fields "
+"in {brackets}. You can use the following fields for this datalayer:<br />%s."
+msgstr ""
+"Gebruik de bronvelden om de titel van een locatie samen te stellen. Plaats "
+"de velden tussen {haakjes}. U kunt de volgende velden voor deze datalaag "
+"gebruiken: <br />%s."
+
+#: src/admin/class-datalayers.php:328
+msgid "Be aware: updating this field will automatically sync all items!"
+msgstr ""
+"Let op: als u dit veld bijwerkt, worden alle items automatisch "
+"gesynchroniseerd!"
+
+#: src/admin/class-datalayers.php:341
+msgid "Field mapping"
+msgstr ""
+
+#: src/admin/class-datalayers.php:353
+msgid "Check all show checkboxes"
+msgstr ""
+
+#: src/admin/class-datalayers.php:354
+msgid "Check all required checkboxes"
+msgstr ""
+
+#: src/admin/class-datalayers.php:361
+msgid "Label from JSON"
+msgstr ""
+
+#: src/admin/class-datalayers.php:365 src/admin/class-datalayers.php:477
+#: src/admin/class-datalayers.php:481
+msgid "Text"
+msgstr ""
+
+#: src/admin/class-datalayers.php:366
+msgid "Textarea"
+msgstr ""
+
+#: src/admin/class-datalayers.php:367
+msgid "WYSIWYG"
+msgstr ""
+
+#: src/admin/class-datalayers.php:368
+msgid "Timepicker"
+msgstr ""
+
+#: src/admin/class-datalayers.php:369
+msgid "Datepicker"
+msgstr ""
+
+#: src/admin/class-datalayers.php:371
+msgid "Number"
+msgstr ""
+
+#: src/admin/class-datalayers.php:380
+msgid "Label from source"
+msgstr ""
+
+#: src/admin/class-datalayers.php:392
+msgid "Display label"
+msgstr ""
+
+#: src/admin/class-datalayers.php:401
+msgid "Show"
+msgstr ""
+
+#: src/admin/class-datalayers.php:410
+msgid "Required"
+msgstr ""
+
+#: src/admin/class-datalayers.php:426
+msgid "Tooltip configuration"
+msgstr ""
+
+#: src/admin/class-datalayers.php:442
+msgid "Image"
+msgstr ""
+
+#: src/admin/class-datalayers.php:446
+msgid "Image URL"
+msgstr ""
+
+#: src/admin/class-datalayers.php:451
+msgid "Image Alt Text"
+msgstr ""
+
+#: src/admin/class-datalayers.php:457 src/admin/class-datalayers.php:461
+msgid "Title"
+msgstr ""
+
+#: src/admin/class-datalayers.php:467 src/admin/class-datalayers.php:471
+msgid "Meta"
+msgstr ""
+
+#: src/admin/class-datalayers.php:487
+msgid "Button"
+msgstr ""
+
+#: src/admin/class-datalayers.php:491
+msgid "Button Text"
+msgstr ""
+
+#: src/admin/class-datalayers.php:496
+msgid "Button URL"
+msgstr ""
+
+#: src/admin/class-datalayers.php:517
+msgid "Blue"
+msgstr "Blauw"
+
+#: src/admin/class-datalayers.php:518
+msgid "Orange"
+msgstr "Oranje"
+
+#: src/admin/class-datalayers.php:519
+msgid "Red"
+msgstr "Rood"
+
+#: src/admin/class-datalayers.php:520
+msgid "Green"
+msgstr "Groen"
+
+#: src/admin/class-datalayers.php:521
+msgid "Yellow"
+msgstr "Geel"
+
+#: src/admin/class-datalayers.php:522
+msgid "Purple"
+msgstr "Paars"
+
+#: src/admin/class-datalayers.php:523
+msgid "Turquoise"
+msgstr ""
+
+#: src/admin/class-datalayers.php:524
+msgid "Brown"
+msgstr "Bruin"
+
+#: src/admin/class-datalayers.php:525
+msgid "Gray"
+msgstr "Grijs"
+
+#: src/admin/class-datalayers.php:526
+msgid "Black"
+msgstr "Zwart"
+
+#: src/admin/class-datalayers.php:527
+msgid "Dark Gray"
+msgstr "Donker Grijs"
+
+#: src/admin/class-datalayers.php:528
+msgid "Navy Blue"
+msgstr "Marine Blauw"
+
+#: src/admin/class-datalayers.php:529
+msgid "Deep Purple"
+msgstr "Diep Paars"
+
+#: src/admin/class-datalayers.php:552
+msgid "Datalayer markers"
+msgstr ""
+
+#: src/admin/class-datalayers.php:560
+msgid "Default marker color"
+msgstr "Default marker kleur"
+
+#: src/admin/class-datalayers.php:570
+msgid "Field to customize marker on"
+msgstr "Veld om marker op aan te passen"
+
+#: src/admin/class-datalayers.php:571
+msgid "Select the field that determines what marker should be shown."
+msgstr ""
+"Selecteer het veld dat bepaalt welke markering moet worden weergegeven."
+
+#: src/admin/class-datalayers.php:584
+msgid "Marker {#}"
+msgstr ""
+
+#: src/admin/class-datalayers.php:585
+msgid "Add Marker"
+msgstr "Voeg Marker toe"
+
+#: src/admin/class-datalayers.php:586
+msgid "Remove Marker"
+msgstr "Verwijder Marker"
+
+#: src/admin/class-datalayers.php:596
+msgid "Field value"
+msgstr "Veld waarde"
+
+#: src/admin/class-datalayers.php:597
+msgid ""
+"The value that should be matched to the field. If the value matches, this "
+"marker should be used."
+msgstr ""
+"Selecteer het veld dat bepaalt welke markering moet worden weergegeven."
+
+#: src/admin/class-datalayers.php:606
+msgid "Icon"
+msgstr ""
+
+#: src/admin/class-datalayers.php:607
+msgid "Select the icon for the marker."
+msgstr "Selecteer het icon  voor de marker."
+
+#: src/admin/class-datalayers.php:618
+msgid "Marker color"
+msgstr "Marker kleur"
+
+#: src/admin/class-datalayers.php:629
+msgid "Marker preview"
+msgstr "Marker voorbeeld"
+
+#: src/admin/class-datalayers.php:640
+msgid "Datalayer locations"
+msgstr "Datalayer locaties"
+
+#: src/admin/class-datalayers.php:651
+msgid "No locations attached"
+msgstr "Geen locaties gekoppeld"
+
+#: src/admin/class-datalayers.php:653
+msgid "The following locations are attached to this datalayer:"
+msgstr "De volgende locaties zijn aan deze gegevenslaag gekoppeld:"
+
+#: src/admin/class-datalayers.php:883 src/admin/class-datalayers.php:1094
+#: src/admin/class-importer.php:398
+msgid "The geo file is not valid and can't be parsed."
+msgstr "Het geo-bestand is ongeldig en kan niet worden geparseerd."
+
+#: src/admin/class-datalayers.php:967
+msgid "The following fields are required and highlighted below:"
+msgstr "De volgende velden zijn verplicht en hieronder gemarkeerd:"
+
+#: src/admin/class-datalayers.php:1007
+msgid "Can't fetch datalayer URL."
+msgstr "Kan datalayer-URL niet ophalen."
+
+#: src/admin/class-datalayers.php:1013
+msgid "No data found."
+msgstr "Geen data gevonden"
+
+#: src/admin/class-importer.php:501
+msgid "Sync completed successfully!"
+msgstr "Synchronisatie succesvol voltooid!"
+
+#: src/admin/class-locations.php:120
+msgid "Location datalayer"
+msgstr ""
+
+#: src/admin/class-locations.php:135
+msgid ""
+"Choose the datalayer of the location from the datalayer post type. Once a "
+"datalayer is selected, extra input fields from this datalayer will be "
+"included."
+msgstr ""
+"Selecteer de datalaag van de locatie uit het datalaagposttype. Zodra een "
+"datalaag is geselecteerd, worden extra invoervelden uit deze datalaag "
+"opgenomen."
+
+#: src/admin/class-locations.php:171
+msgid "Location geometry object"
+msgstr "Locatie geometry object"
+
+#: src/admin/class-locations.php:186
+msgid "The latitude of the location."
+msgstr "De breedtegraad (latitude) van de locatie."
+
+#. translators: %s: link to latlong.net.
+#: src/admin/class-locations.php:189
+msgid ""
+"You can retrieve the latitude and longitude from an address via <a "
+"href=\"%s\" target=\"_blank\">this link</a>."
+msgstr ""
+"U kunt de breedtegraad en lengtegraad van een adres ophalen via <a "
+"href=\"%s\" target=\"_blank\">deze link</a>."
+
+#: src/admin/class-locations.php:198
+msgid "The longitude of the location."
+msgstr "De lengtegraad (longtitude) van de locatie."
+
+#: src/admin/class-locations.php:209
+msgid "Location fixed fields"
+msgstr "Locatie vaste velden"
+
+#: src/admin/class-locations.php:255
+msgid "This field is hidden in the frontend."
+msgstr "Dit veld is verborgen in de frontend."
+
+#: src/rest_api/class-openkaarten-controller.php:278
+msgid "Invalid post ID."
+msgstr ""
+
+#. translators: %s: List of valid output formats.
+#: src/rest_api/class-openkaarten-controller.php:288
+msgid "Invalid output format. Use one of the following output formats: %s"
+msgstr ""
+"Ongeldige uitvoeropmaak. Gebruik een van de volgende uitvoeropmaken: %s"
+
+#: src/rest_api/class-openkaarten-controller.php:308
+msgid "Limit response to posts within (a) specific post type(s)."
+msgstr "Beperk de reacties tot berichten binnen een bepaald type bericht."
+
+#: src/rest_api/class-openkaarten-controller.php:454
+msgid "Set the projection for the output."
+msgstr "Stel de projectie voor de uitvoer in."
