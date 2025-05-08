@@ -504,6 +504,33 @@ class Datalayers {
 	}
 
 	/**
+	 * Returns an array of predefined marker color options.
+	 *
+	 * This function provides an associative array of hex color codes as keys
+	 * and their corresponding color names as values. Intended for use in CMB2
+	 * select fields or other UI elements that require consistent color options.
+	 *
+	 * @return array Associative array of hex color codes and their names.
+	 */
+	public static function get_marker_color_options() {
+		return [
+			'#0072B2' => __( 'Blue', 'openkaarten-base' ),
+			'#9D6D00' => __( 'Orange', 'openkaarten-base' ),
+			'#C15500' => __( 'Red', 'openkaarten-base' ),
+			'#008661' => __( 'Green', 'openkaarten-base' ),
+			'#7E7722' => __( 'Yellow', 'openkaarten-base' ),
+			'#A26085' => __( 'Purple', 'openkaarten-base' ),
+			'#3B7BA0' => __( 'Turquoise', 'openkaarten-base' ),
+			'#A0522D' => __( 'Brown', 'openkaarten-base' ),
+			'#757575' => __( 'Gray', 'openkaarten-base' ),
+			'#000000' => __( 'Black', 'openkaarten-base' ),
+			'#555555' => __( 'Dark Gray', 'openkaarten-base' ),
+			'#003366' => __( 'Navy Blue', 'openkaarten-base' ),
+			'#4B0082' => __( 'Deep Purple', 'openkaarten-base' ),
+		];
+	}
+
+	/**
 	 * Add the markers metaboxes.
 	 *
 	 * @return void
@@ -533,22 +560,8 @@ class Datalayers {
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
 				'type'    => 'select',
-				'default' => '#0072B2', // default 'Blauw'.
-				'options' => [
-					'#0072B2' => 'Blauw',
-					'#9D6D00' => 'Oranje',
-					'#C15500' => 'Rood',
-					'#008661' => 'Groen',
-					'#7E7722' => 'Geel',
-					'#A26085' => 'Paars',
-					'#3B7BA0' => 'Turquoise',
-					'#A0522D' => 'Bruin',
-					'#757575' => 'Grijs',
-					'#000000' => 'Zwart',
-					'#555555' => 'Donkergrijs',
-					'#003366' => 'Marineblauw',
-					'#4B0082' => 'Dieppaars',
-				],
+				'default' => '#0072B2', // default 'Blue'.
+				'options' => self::get_marker_color_options(),
 			]
 		);
 
@@ -605,22 +618,8 @@ class Datalayers {
 				'name'    => __( 'Marker color', 'openkaarten-base' ),
 				'id'      => 'marker_color',
 				'type'    => 'select',
-				'default' => '#0072B2', // Default 'Blauw'.
-				'options' => [
-					'#0072B2' => 'Blauw',
-					'#9D6D00' => 'Oranje',
-					'#C15500' => 'Rood',
-					'#008661' => 'Groen',
-					'#7E7722' => 'Geel',
-					'#A26085' => 'Paars',
-					'#3B7BA0' => 'Turquoise',
-					'#A0522D' => 'Bruin',
-					'#757575' => 'Grijs',
-					'#000000' => 'Zwart',
-					'#555555' => 'Donkergrijs',
-					'#003366' => 'Marineblauw',
-					'#4B0082' => 'Dieppaars',
-				],
+				'default' => '#0072B2', // Default 'Blue'.
+				'options' => self::get_marker_color_options(),
 			]
 		);
 
