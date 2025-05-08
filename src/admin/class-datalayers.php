@@ -532,8 +532,24 @@ class Datalayers {
 			[
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
-				'type'    => 'colorpicker',
-				'default' => '#ff0000',
+				// 'type' => 'colorpicker',.
+                'type'    => 'select',
+				'default' => '#0072B2', // default 'Blauw'.
+				'options' => [
+					'#0072B2' => 'Blauw',
+					'#9D6D00' => 'Oranje',
+					'#C15500' => 'Rood',
+					'#008661' => 'Groen',
+					'#7E7722' => 'Geel',
+					'#A26085' => 'Paars',
+					'#3B7BA0' => 'Turquoise',
+					'#A0522D' => 'Bruin',
+					'#757575' => 'Grijs',
+					'#000000' => 'Zwart',
+					'#555555' => 'Donkergrijs',
+					'#003366' => 'Marineblauw',
+					'#4B0082' => 'Dieppaars',
+				],
 			]
 		);
 
@@ -587,9 +603,26 @@ class Datalayers {
 		$cmb->add_group_field(
 			$group_field_id,
 			[
-				'name' => __( 'Marker color', 'openkaarten-base' ),
-				'id'   => 'marker_color',
-				'type' => 'colorpicker',
+				'name'    => __( 'Marker color', 'openkaarten-base' ),
+				'id'      => 'marker_color',
+                // 'type' => 'colorpicker',.
+                'type'    => 'select',
+				'default' => '#0072B2', // Default 'Blauw'.
+				'options' => [
+					'#0072B2' => 'Blauw',
+					'#9D6D00' => 'Oranje',
+					'#C15500' => 'Rood',
+					'#008661' => 'Groen',
+					'#7E7722' => 'Geel',
+					'#A26085' => 'Paars',
+					'#3B7BA0' => 'Turquoise',
+					'#A0522D' => 'Bruin',
+					'#757575' => 'Grijs',
+					'#000000' => 'Zwart',
+					'#555555' => 'Donkergrijs',
+					'#003366' => 'Marineblauw',
+					'#4B0082' => 'Dieppaars',
+				],
 			]
 		);
 
