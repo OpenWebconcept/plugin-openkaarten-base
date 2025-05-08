@@ -532,8 +532,7 @@ class Datalayers {
 			[
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
-				// 'type' => 'colorpicker',.
-                'type'    => 'select',
+				'type'    => 'select',
 				'default' => '#0072B2', // default 'Blauw'.
 				'options' => [
 					'#0072B2' => 'Blauw',
@@ -605,8 +604,7 @@ class Datalayers {
 			[
 				'name'    => __( 'Marker color', 'openkaarten-base' ),
 				'id'      => 'marker_color',
-                // 'type' => 'colorpicker',.
-                'type'    => 'select',
+				'type'    => 'select',
 				'default' => '#0072B2', // Default 'Blauw'.
 				'options' => [
 					'#0072B2' => 'Blauw',
