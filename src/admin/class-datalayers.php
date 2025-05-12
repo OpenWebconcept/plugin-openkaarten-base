@@ -505,7 +505,7 @@ class Datalayers {
 	}
 
 	/**
-	 * Returns an array of predefined marker-color classes.
+	 * Returns an array of predefined marker-color options.
 	 *
 	 * This function provides an associative array of marker-color class names as keys
 	 * and their corresponding color names as values. Intended for use in CMB2
