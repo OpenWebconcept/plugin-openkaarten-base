@@ -514,19 +514,19 @@ class Datalayers {
 	 */
 	public static function get_marker_color_options() {
 		return [
-			'#0072B2' => __( 'Blue', 'openkaarten-base' ),
-			'#9D6D00' => __( 'Orange', 'openkaarten-base' ),
-			'#C15500' => __( 'Red', 'openkaarten-base' ),
-			'#008661' => __( 'Green', 'openkaarten-base' ),
-			'#7E7722' => __( 'Yellow', 'openkaarten-base' ),
-			'#A26085' => __( 'Purple', 'openkaarten-base' ),
-			'#3B7BA0' => __( 'Turquoise', 'openkaarten-base' ),
-			'#A0522D' => __( 'Brown', 'openkaarten-base' ),
-			'#757575' => __( 'Gray', 'openkaarten-base' ),
-			'#000000' => __( 'Black', 'openkaarten-base' ),
-			'#555555' => __( 'Dark Gray', 'openkaarten-base' ),
-			'#003366' => __( 'Navy Blue', 'openkaarten-base' ),
-			'#4B0082' => __( 'Deep Purple', 'openkaarten-base' ),
+			'marker-black'          => __( 'Black', 'openkaarten-base' ),
+			'marker-blue'           => __( 'Blue', 'openkaarten-base' ),
+			'marker-brown'          => __( 'Brown', 'openkaarten-base' ),
+			'marker-darkgray'       => __( 'Dark Gray', 'openkaarten-base' ),
+			'marker-deep-purple'    => __( 'Deep Purple', 'openkaarten-base' ),
+			'marker-gray'           => __( 'Gray', 'openkaarten-base' ),
+			'marker-green'          => __( 'Green', 'openkaarten-base' ),
+			'marker-navy-blue'      => __( 'Navy Blue', 'openkaarten-base' ),
+			'marker-orange'         => __( 'Orange', 'openkaarten-base' ),
+			'marker-purple'         => __( 'Purple', 'openkaarten-base' ),
+			'marker-red'            => __( 'Red', 'openkaarten-base' ),
+			'marker-turquoise'      => __( 'Turquoise', 'openkaarten-base' ),
+			'marker-yellow'         => __( 'Yellow', 'openkaarten-base' ),
 		];
 	}
 
@@ -560,7 +560,7 @@ class Datalayers {
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
 				'type'    => 'select',
-				'default' => '#0072B2', // default 'Blue'.
+				'default' => 'color-blue', // default 'Blue'.
 				'options' => self::get_marker_color_options(),
 			]
 		);
@@ -618,7 +618,7 @@ class Datalayers {
 				'name'    => __( 'Marker color', 'openkaarten-base' ),
 				'id'      => 'marker_color',
 				'type'    => 'select',
-				'default' => '#0072B2', // Default 'Blue'.
+				'default' => 'color-blue', // Default 'Blue'.
 				'options' => self::get_marker_color_options(),
 			]
 		);
