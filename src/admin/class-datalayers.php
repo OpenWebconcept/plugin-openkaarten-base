@@ -105,6 +105,7 @@ class Datalayers {
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
+		add_filter( 'openkaarten_marker_color_options', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'get_custom_marker_colors' ] );
 		add_action( 'cmb2_save_post_fields', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_save_datalayer_fields' ], 10, 4 );
 	}
 
@@ -529,6 +530,23 @@ class Datalayers {
 			'marker-yellow'         => __( 'Yellow', 'openkaarten-base' ),
 		];
 	}
+
+	/**
+	 * Customize the available marker color options for map markers.
+	 *
+	 * This function allows additional marker colors to be added or existing ones to be modified
+	 * via the 'openkaarten_marker_color_options' filter.
+	 *
+	 * @param array $colors Existing array of marker color class names and their labels.
+	 *
+	 * @return array Modified array of marker colors.
+	 */
+	public static function get_custom_marker_colors( array $colors ): array {
+		$colors['marker-pink'] = __( 'Pink', 'openkaarten-base' );
+
+		return $colors;
+	}
+
 
 	/**
 	 * Add the markers metaboxes.
