@@ -527,7 +527,6 @@ class Datalayers {
 			'marker-purple'      => __( 'Purple', 'openkaarten-base' ),
 			'marker-red'         => __( 'Red', 'openkaarten-base' ),
 			'marker-turquoise'   => __( 'Turquoise', 'openkaarten-base' ),
-			'marker-yellow'      => __( 'Yellow', 'openkaarten-base' ),
 		];
 
 		return apply_filters( 'openkaarten_marker_color_options', $default_colors );
@@ -544,7 +543,7 @@ class Datalayers {
 	 * @return array Modified array of marker colors.
 	 */
 	public static function get_custom_marker_colors( array $colors ): array {
-		$colors['marker-pink'] = __( 'Pink', 'openkaarten-base' );
+		$colors['marker-yellow'] = __( 'Yellow', 'openkaarten-base' );
 
 		return $colors;
 	}
