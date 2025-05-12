@@ -560,7 +560,7 @@ class Datalayers {
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
 				'type'    => 'select',
-				'default' => 'color-blue', // default 'Blue'.
+				'default' => 'marker-black', // default 'Black'.
 				'options' => self::get_marker_color_options(),
 			]
 		);
@@ -618,7 +618,7 @@ class Datalayers {
 				'name'    => __( 'Marker color', 'openkaarten-base' ),
 				'id'      => 'marker_color',
 				'type'    => 'select',
-				'default' => 'color-blue', // Default 'Blue'.
+				'default' => 'marker-black', // Default 'Black'.
 				'options' => self::get_marker_color_options(),
 			]
 		);
