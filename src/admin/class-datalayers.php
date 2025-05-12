@@ -106,6 +106,7 @@ class Datalayers {
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
 		add_action( 'cmb2_save_post_fields', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_save_datalayer_fields' ], 10, 4 );
+		add_filter( 'openkaarten_marker_color_options', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'get_custom_marker_colors' ] );
 	}
 
 	/**
@@ -504,31 +505,49 @@ class Datalayers {
 	}
 
 	/**
-	 * Returns an array of predefined marker color options.
+	 * Returns an array of predefined marker-color options.
 	 *
-	 * This function provides an associative array of hex color codes as keys
+	 * This function provides an associative array of marker-color class names as keys
 	 * and their corresponding color names as values. Intended for use in CMB2
 	 * select fields or other UI elements that require consistent color options.
 	 *
-	 * @return array Associative array of hex color codes and their names.
+	 * @return array Associative array of marker-color class names and their and their labels.
 	 */
 	public static function get_marker_color_options() {
-		return [
-			'#0072B2' => __( 'Blue', 'openkaarten-base' ),
-			'#9D6D00' => __( 'Orange', 'openkaarten-base' ),
-			'#C15500' => __( 'Red', 'openkaarten-base' ),
-			'#008661' => __( 'Green', 'openkaarten-base' ),
-			'#7E7722' => __( 'Yellow', 'openkaarten-base' ),
-			'#A26085' => __( 'Purple', 'openkaarten-base' ),
-			'#3B7BA0' => __( 'Turquoise', 'openkaarten-base' ),
-			'#A0522D' => __( 'Brown', 'openkaarten-base' ),
-			'#757575' => __( 'Gray', 'openkaarten-base' ),
-			'#000000' => __( 'Black', 'openkaarten-base' ),
-			'#555555' => __( 'Dark Gray', 'openkaarten-base' ),
-			'#003366' => __( 'Navy Blue', 'openkaarten-base' ),
-			'#4B0082' => __( 'Deep Purple', 'openkaarten-base' ),
+		$default_colors = [
+			'marker-black'       => __( 'Black', 'openkaarten-base' ),
+			'marker-blue'        => __( 'Blue', 'openkaarten-base' ),
+			'marker-brown'       => __( 'Brown', 'openkaarten-base' ),
+			'marker-darkgray'    => __( 'Dark Gray', 'openkaarten-base' ),
+			'marker-deep-purple' => __( 'Deep Purple', 'openkaarten-base' ),
+			'marker-gray'        => __( 'Gray', 'openkaarten-base' ),
+			'marker-green'       => __( 'Green', 'openkaarten-base' ),
+			'marker-navy-blue'   => __( 'Navy Blue', 'openkaarten-base' ),
+			'marker-orange'      => __( 'Orange', 'openkaarten-base' ),
+			'marker-purple'      => __( 'Purple', 'openkaarten-base' ),
+			'marker-red'         => __( 'Red', 'openkaarten-base' ),
+			'marker-turquoise'   => __( 'Turquoise', 'openkaarten-base' ),
 		];
+
+		return apply_filters( 'openkaarten_marker_color_options', $default_colors );
 	}
+
+	/**
+	 * Customize the available marker color options for map markers.
+	 *
+	 * This function allows additional marker colors to be added or existing ones to be modified
+	 * via the 'openkaarten_marker_color_options' filter.
+	 *
+	 * @param array $colors Existing array of marker-color class names and their labels.
+	 *
+	 * @return array Modified array of marker colors.
+	 */
+	public static function get_custom_marker_colors( array $colors ): array {
+		$colors['marker-yellow'] = __( 'Yellow', 'openkaarten-base' );
+
+		return $colors;
+	}
+
 
 	/**
 	 * Add the markers metaboxes.
@@ -560,7 +579,7 @@ class Datalayers {
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
 				'type'    => 'select',
-				'default' => '#0072B2', // default 'Blue'.
+				'default' => 'marker-black', // default 'Black'.
 				'options' => self::get_marker_color_options(),
 			]
 		);
@@ -618,7 +637,7 @@ class Datalayers {
 				'name'    => __( 'Marker color', 'openkaarten-base' ),
 				'id'      => 'marker_color',
 				'type'    => 'select',
-				'default' => '#0072B2', // Default 'Blue'.
+				'default' => 'marker-black', // Default 'Black'.
 				'options' => self::get_marker_color_options(),
 			]
 		);

@@ -59,7 +59,7 @@ if ( locationItems.length !== 0 ) {
     const content = location.content;
 
     // Create a custom marker icon with the location color and icon.
-    let customIconHtml = "<div style='background-color:" + location.color + ";' class='marker-pin'></div>";
+    let customIconHtml = "<div class='marker-pin " + location.color + "'></div>";
     if (location.icon) {
       customIconHtml += "<span class='marker-icon'><img src='" + location.icon + "'  alt='marker icon' /></span>";
     }
