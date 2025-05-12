@@ -505,13 +505,13 @@ class Datalayers {
 	}
 
 	/**
-	 * Returns an array of predefined marker color options.
+	 * Returns an array of predefined marker-color classes.
 	 *
-	 * This function provides an associative array of hex color codes as keys
+	 * This function provides an associative array of marker-color class names as keys
 	 * and their corresponding color names as values. Intended for use in CMB2
 	 * select fields or other UI elements that require consistent color options.
 	 *
-	 * @return array Associative array of hex color codes and their names.
+	 * @return array Associative array of marker-color class names and their and their labels.
 	 */
 	public static function get_marker_color_options() {
 		$default_colors = [
@@ -539,7 +539,7 @@ class Datalayers {
 	 * This function allows additional marker colors to be added or existing ones to be modified
 	 * via the 'openkaarten_marker_color_options' filter.
 	 *
-	 * @param array $colors Existing array of marker color class names and their labels.
+	 * @param array $colors Existing array of marker-color class names and their labels.
 	 *
 	 * @return array Modified array of marker colors.
 	 */
