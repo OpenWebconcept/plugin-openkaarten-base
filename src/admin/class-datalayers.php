@@ -105,8 +105,8 @@ class Datalayers {
 		add_action( 'cmb2_admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'add_markers_metaboxes' ] );
 		add_action( 'cmb2_after_form', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_after_form_do_js_validation' ] );
 		add_filter( 'cmb2_override_source_fields_meta_value', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'override_source_fields_meta_value' ], 10, 2 );
-		add_filter( 'openkaarten_marker_color_options', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'get_custom_marker_colors' ] );
 		add_action( 'cmb2_save_post_fields', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_save_datalayer_fields' ], 10, 4 );
+		add_filter( 'openkaarten_marker_color_options', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'get_custom_marker_colors' ] );
 	}
 
 	/**
@@ -515,19 +515,19 @@ class Datalayers {
 	 */
 	public static function get_marker_color_options() {
 		return [
-			'marker-black'          => __( 'Black', 'openkaarten-base' ),
-			'marker-blue'           => __( 'Blue', 'openkaarten-base' ),
-			'marker-brown'          => __( 'Brown', 'openkaarten-base' ),
-			'marker-darkgray'       => __( 'Dark Gray', 'openkaarten-base' ),
-			'marker-deep-purple'    => __( 'Deep Purple', 'openkaarten-base' ),
-			'marker-gray'           => __( 'Gray', 'openkaarten-base' ),
-			'marker-green'          => __( 'Green', 'openkaarten-base' ),
-			'marker-navy-blue'      => __( 'Navy Blue', 'openkaarten-base' ),
-			'marker-orange'         => __( 'Orange', 'openkaarten-base' ),
-			'marker-purple'         => __( 'Purple', 'openkaarten-base' ),
-			'marker-red'            => __( 'Red', 'openkaarten-base' ),
-			'marker-turquoise'      => __( 'Turquoise', 'openkaarten-base' ),
-			'marker-yellow'         => __( 'Yellow', 'openkaarten-base' ),
+			'marker-black'       => __( 'Black', 'openkaarten-base' ),
+			'marker-blue'        => __( 'Blue', 'openkaarten-base' ),
+			'marker-brown'       => __( 'Brown', 'openkaarten-base' ),
+			'marker-darkgray'    => __( 'Dark Gray', 'openkaarten-base' ),
+			'marker-deep-purple' => __( 'Deep Purple', 'openkaarten-base' ),
+			'marker-gray'        => __( 'Gray', 'openkaarten-base' ),
+			'marker-green'       => __( 'Green', 'openkaarten-base' ),
+			'marker-navy-blue'   => __( 'Navy Blue', 'openkaarten-base' ),
+			'marker-orange'      => __( 'Orange', 'openkaarten-base' ),
+			'marker-purple'      => __( 'Purple', 'openkaarten-base' ),
+			'marker-red'         => __( 'Red', 'openkaarten-base' ),
+			'marker-turquoise'   => __( 'Turquoise', 'openkaarten-base' ),
+			'marker-yellow'      => __( 'Yellow', 'openkaarten-base' ),
 		];
 	}
 
