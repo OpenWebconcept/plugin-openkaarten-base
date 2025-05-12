@@ -514,7 +514,7 @@ class Datalayers {
 	 * @return array Associative array of hex color codes and their names.
 	 */
 	public static function get_marker_color_options() {
-		return [
+		$default_colors = [
 			'marker-black'       => __( 'Black', 'openkaarten-base' ),
 			'marker-blue'        => __( 'Blue', 'openkaarten-base' ),
 			'marker-brown'       => __( 'Brown', 'openkaarten-base' ),
@@ -529,6 +529,8 @@ class Datalayers {
 			'marker-turquoise'   => __( 'Turquoise', 'openkaarten-base' ),
 			'marker-yellow'      => __( 'Yellow', 'openkaarten-base' ),
 		];
+
+		return apply_filters( 'openkaarten_marker_color_options', $default_colors );
 	}
 
 	/**
