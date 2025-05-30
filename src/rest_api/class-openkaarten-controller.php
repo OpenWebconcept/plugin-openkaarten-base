@@ -221,6 +221,10 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$posts = [];
 		foreach ( $query_result as $post ) {
 			$post_feature = $this->prepare_item_for_response( $post, $request );
+			if ( !is_string($post_feature) ) {
+				// prepare_item_for_response() returns empty arrays in error conditions.
+				continue;
+			}
 			$post_item    = json_decode( $post_feature );
 
 			// Add title and id to post item.
