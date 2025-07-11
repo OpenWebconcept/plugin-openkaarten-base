@@ -25,6 +25,45 @@
 		position: absolute;
 		border-radius: 50%;
 	}
+	&.marker-black {
+		background-color: #000000;
+	}
+	&.marker-blue {
+		background-color: #0072B2;
+	}
+	&.marker-brown {
+		background-color: #A0522D;
+	}
+	&.marker-darkgray {
+		background-color: #555555;
+	}
+	&.marker-deep-purple {
+		background-color: #4B0082;
+	}
+	&.marker-gray {
+		background-color: #757575;
+	}
+	&.marker-green {
+		background-color: #008661;
+	}
+	&.marker-navy-blue {
+		background-color: #003366;
+	}
+	&.marker-orange {
+		background-color: #9D6D00;
+	}
+	&.marker-purple {
+		background-color: #A26085;
+	}
+	&.marker-red {
+		background-color: #C15500;
+	}
+	&.marker-turquoise {
+		background-color: #3B7BA0;
+	}
+	&.marker-yellow {
+		background-color: #7E7722;
+	}
 }
 
 // to align icon
