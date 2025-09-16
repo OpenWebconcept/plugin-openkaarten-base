@@ -37,7 +37,7 @@
         }
     ],
     "require" : {
-        "composer/installers" : "~1.0",
+        "composer/installers" : "^1.0 || ^2.0",
         "richardkorthuis/geophp": "dev-development",
         "wpackagist-plugin/cmb2": "*",
         "acato-plugins/cmb2-flexible-content": "dev-master",
