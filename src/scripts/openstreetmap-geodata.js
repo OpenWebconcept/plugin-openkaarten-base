@@ -1,23 +1,34 @@
 import L from "leaflet";
 
-// Retrieve the locations and map configuration from the global window object.
-const { centerLat, centerLong, defaultZoom, setMarker, markers } = window.leaflet_vars;
-
-let markersArray = markers;
-
-// Set the map configuration.
-const config = {
-  "centerX": centerLong,
-  "centerY": centerLat,
-  "minimumZoom": 4,
-  "maximumZoom": 16,
-  "defaultZoom": defaultZoom,
-  "enableZoomControl": true,
-  "enableBoxZoomControl": true
-}
-
 // Create the map with the specified configuration.
 window.onload = function() {
+  // Check if there is a div with the ID 'map-geodata'.
+  if ( ! document.getElementById( 'map-geodata' ) ) {
+    return;
+  }
+
+  // Check if leafletvars is defined.
+  if ( 'undefined' === typeof window.leaflet_vars ) {
+    console.error( 'leaflet_vars is not defined' );
+    return;
+  }
+
+  // Retrieve the locations and map configuration from the global window object.
+  const { centerLat, centerLong, defaultZoom, setMarker, markers } = window.leaflet_vars;
+
+  let markersArray = markers;
+
+  // Set the map configuration.
+  const config = {
+    "centerX": centerLong,
+    "centerY": centerLat,
+    "minimumZoom": 4,
+    "maximumZoom": 16,
+    "defaultZoom": defaultZoom,
+    "enableZoomControl": true,
+    "enableBoxZoomControl": true
+  }
+
   const map = new L.Map('map-geodata', {
     center: [config.centerY, config.centerX],
     zoom: config.defaultZoom,
