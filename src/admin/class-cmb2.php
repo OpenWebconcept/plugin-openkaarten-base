@@ -137,15 +137,19 @@ class Cmb2 {
 			return;
 		}
 
-		// Set location variables as default to the Netherlands area.
-		$min_lat     = 51.8;
-		$max_lat     = 52.5;
-		$min_long    = 4.5;
-		$max_long    = 5.0;
-		$center_lat  = ( $min_lat + $max_lat ) / 2;
-		$center_long = ( $min_long + $max_long ) / 2;
+		// Set default min and max lat/lng.
+		$min_lat  = null;
+		$max_lat  = null;
+		$min_long = null;
+		$max_long = null;
 
-		$locations = [];
+		// Set settings options for the map.
+		$center_lat   = get_option( 'openkaarten_base_default_lat', 52.0 );
+		$center_long  = get_option( 'openkaarten_base_default_lon', 4.75 );
+		$default_zoom = get_option( 'openkaarten_base_default_zoom', 8 );
+
+		$locations  = [];
+		$fit_bounds = false;
 
 		try {
 			// Parse the feature collection.
@@ -156,10 +160,10 @@ class Cmb2 {
 
 			if ( ! empty( $bbox ) ) {
 				// Set min and max values for the map.
-				$min_lat  = ( null === $min_lat || $bbox['miny'] < $min_lat ) ? $bbox['miny'] : $min_lat;
-				$max_lat  = ( null === $max_lat || $bbox['maxy'] > $max_lat ) ? $bbox['maxy'] : $max_lat;
-				$min_long = ( null === $min_long || $bbox['minx'] < $min_long ) ? $bbox['minx'] : $min_long;
-				$max_long = ( null === $max_long || $bbox['maxx'] > $max_long ) ? $bbox['maxx'] : $max_long;
+				$min_lat  = $bbox['miny'];
+				$max_lat  = $bbox['maxy'];
+				$min_long = $bbox['minx'];
+				$max_long = $bbox['maxx'];
 
 				// Get average lat and long for the center of the map.
 				$center_lat  = ( $min_lat + $max_lat ) / 2;
@@ -211,6 +215,7 @@ class Cmb2 {
 					}
 
 					$locations[] = $location;
+					$fit_bounds  = true;
 				}
 			}
 		} catch ( \Exception $e ) {
@@ -231,8 +236,8 @@ class Cmb2 {
 				'maxLong'      => esc_attr( $max_long ),
 				'centerLat'    => esc_attr( $center_lat ),
 				'centerLong'   => esc_attr( $center_long ),
-				'defaultZoom'  => 10,
-				'fitBounds'    => true,
+				'defaultZoom'  => $default_zoom,
+				'fitBounds'    => $fit_bounds,
 			]
 		);
 
