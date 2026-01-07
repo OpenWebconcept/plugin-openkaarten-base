@@ -145,7 +145,7 @@ class Cmb2 {
 
 		// Set settings options for the map.
 		$center_lat   = get_option( 'openkaarten_base_default_lat', 52.0 );
-		$center_long  = get_option( 'openkaarten_base_default_lon', 4.75 );
+		$center_long  = get_option( 'openkaarten_base_default_lng', 4.75 );
 		$default_zoom = get_option( 'openkaarten_base_default_zoom', 8 );
 
 		$locations  = [];

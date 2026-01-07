@@ -240,7 +240,7 @@ class Admin {
 			]
 		);
 		register_setting( 'openkaarten-base-settings-group', 'openkaarten_base_default_lat', $args_lat );
-		register_setting( 'openkaarten-base-settings-group', 'openkaarten_base_default_lon', $args_lon );
+		register_setting( 'openkaarten-base-settings-group', 'openkaarten_base_default_lng', $args_lon );
 		register_setting(
 			'openkaarten-base-settings-group',
 			'openkaarten_base_default_zoom',
@@ -281,14 +281,14 @@ class Admin {
 					</tr>
 					<tr valign="top">
 						<th scope="row">
-							<label for="openkaarten_base_default_lon"><?php esc_html_e( 'Default Longitude', 'openkaarten-base' ); ?></label>
+							<label for="openkaarten_base_default_lng"><?php esc_html_e( 'Default Longitude', 'openkaarten-base' ); ?></label>
 						</th>
 						<td>
 							<input
 								type="text"
-								id="openkaarten_base_default_lon"
-								name="openkaarten_base_default_lon"
-								value="<?php echo esc_attr( get_option( 'openkaarten_base_default_lon', 4.75 ) ); ?>"
+								id="openkaarten_base_default_lng"
+								name="openkaarten_base_default_lng"
+								value="<?php echo esc_attr( get_option( 'openkaarten_base_default_lng', 4.75 ) ); ?>"
 							/>
 							<p class="description"><?php esc_html_e( 'Set the default longitude for maps.', 'openkaarten-base' ); ?></p>
 						</td>
