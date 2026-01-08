@@ -51,6 +51,8 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'admin_enqueue_scripts' ] );
 		add_action( 'admin_notices', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'admin_notices' ] );
 		add_action( 'admin_init', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'check_plugin_dependency' ] );
+		add_action( 'admin_menu', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'add_admin_menu' ], 50 );
+		add_action( 'admin_init', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'register_plugin_settings' ] );
 		add_action( 'after_setup_theme', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'after_setup_theme' ] );
 
 		add_action( 'manage_owc_ok_location_posts_custom_column', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'location_posts_columns' ], 10, 2 );
@@ -198,6 +200,119 @@ class Admin {
 		if ( $error_message ) {
 			echo "<div class='error'><p>" . esc_html( $error_message ) . '</p></div>';
 		}
+	}
+
+	/**
+	 * This function is used to create the settings page for Owc_Openkaarten_Base_Plugin
+	 *
+	 * @return  void
+	 */
+	public static function add_admin_menu() {
+		add_options_page(
+			__( 'OpenKaarten Settings', 'openkaarten-base' ),
+			__( 'OpenKaarten', 'openkaarten-base' ),
+			'manage_options',
+			'openkaarten-base-settings',
+			[ self::class, 'settings_page' ]
+		);
+	}
+
+	/**
+	 * This function is used to create the settings group
+	 *
+	 * @return  void
+	 */
+	public static function register_plugin_settings() {
+		$args     = [
+			'type'              => 'float',
+			'sanitize_callback' => 'floatval',
+		];
+		$args_lat = array_merge(
+			$args,
+			[
+				'default' => 52.0, // Default to the Netherlands area.
+			]
+		);
+		$args_lon = array_merge(
+			$args,
+			[
+				'default' => 4.75, // Default to the Netherlands area.
+			]
+		);
+		register_setting( 'openkaarten-base-settings-group', 'openkaarten_base_default_lat', $args_lat );
+		register_setting( 'openkaarten-base-settings-group', 'openkaarten_base_default_lng', $args_lon );
+		register_setting(
+			'openkaarten-base-settings-group',
+			'openkaarten_base_default_zoom',
+			[
+				'type'              => 'integer',
+				'sanitize_callback' => 'intval',
+				'default'           => 8,
+			]
+		);
+	}
+
+	/**
+	 * This function add the html for the options page
+	 *
+	 * @return  void
+	 */
+	public static function settings_page() {
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'OpenKaarten Base Settings', 'openkaarten-base' ); ?></h1>
+			<form method="post" action="options.php">
+				<?php settings_fields( 'openkaarten-base-settings-group' ); ?>
+				<?php do_settings_sections( 'openkaarten-base-settings-group' ); ?>
+				<table class="form-table">
+					<tr valign="top">
+						<th scope="row">
+							<label for="openkaarten_base_default_lat"><?php esc_html_e( 'Default Latitude', 'openkaarten-base' ); ?></label>
+						</th>
+						<td>
+							<input
+								type="text"
+								id="openkaarten_base_default_lat"
+								name="openkaarten_base_default_lat"
+								value="<?php echo esc_attr( get_option( 'openkaarten_base_default_lat', 52.0 ) ); ?>"
+							/>
+							<p class="description"><?php esc_html_e( 'Set the default latitude for maps.', 'openkaarten-base' ); ?></p>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row">
+							<label for="openkaarten_base_default_lng"><?php esc_html_e( 'Default Longitude', 'openkaarten-base' ); ?></label>
+						</th>
+						<td>
+							<input
+								type="text"
+								id="openkaarten_base_default_lng"
+								name="openkaarten_base_default_lng"
+								value="<?php echo esc_attr( get_option( 'openkaarten_base_default_lng', 4.75 ) ); ?>"
+							/>
+							<p class="description"><?php esc_html_e( 'Set the default longitude for maps.', 'openkaarten-base' ); ?></p>
+						</td>
+					</tr>
+					<tr valign="top">
+						<th scope="row">
+							<label for="openkaarten_base_default_zoom"><?php esc_html_e( 'Default Zoom Level', 'openkaarten-base' ); ?></label>
+						</th>
+						<td>
+							<input
+								type="number"
+								id="openkaarten_base_default_zoom"
+								name="openkaarten_base_default_zoom"
+								value="<?php echo esc_attr( get_option( 'openkaarten_base_default_zoom', 8 ) ); ?>"
+								min="0"
+								max="19"
+							/>
+							<p class="description"><?php esc_html_e( 'Set the default zoom level for maps (0-19).', 'openkaarten-base' ); ?></p>
+						</td>
+				</table>
+				<?php submit_button(); ?>
+			</form>
+		</div>
+		<?php
 	}
 
 	/**

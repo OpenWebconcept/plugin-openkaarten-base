@@ -34,7 +34,7 @@ function initializeMap() {
   }
 
   const map = new L.Map( 'map-base', {
-    center: [config.centerY, config.centerX],
+    center: [config.centerX, config.centerY],
     zoom: config.defaultZoom,
     minZoom: config.minimumZoom,
     maxZoom: config.maximumZoom,
@@ -57,7 +57,7 @@ function initializeMap() {
   } ).addTo( map );
 
   // Add locations to the map as markers.
-  if (locationItems.length !== 0) {
+  if (locationItems.length > 0) {
     for (let i = 0; i < locationItems.length; i++) {
       const location = locationItems[i];
       const geojsonData = location.feature;

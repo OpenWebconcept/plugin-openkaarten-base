@@ -427,7 +427,7 @@ class Locations {
 		if ( ! empty( $source_fields ) ) {
 			foreach ( $source_fields as $source_field ) {
 				// Include only fields that are set to show.
-				if ( ! isset( $source_field['field_show'] ) || ! in_array( $source_field['field_show'], [ 1, 'on' ] ) ) {
+				if ( ! isset( $source_field['field_show'] ) || ! in_array( $source_field['field_show'], [ 1, 'on' ], true ) ) {
 					continue;
 				}
 
