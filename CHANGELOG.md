@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.2.6
+- Flush cache when saving settings.
+
 ## v0.2.5
 - Added settings for default latitude, longitude and zoom level.
 - Fixed bugs for map not showing when there are no markers (AS-21249).
