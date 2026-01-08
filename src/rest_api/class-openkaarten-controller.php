@@ -247,9 +247,9 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 		$response = [
 			'type'       => 'DatasetCollection',
 			'settings'   => [
-				'default_lat'  => get_option( 'openkaarten_base_default_lat' ),
-				'default_lng'  => get_option( 'openkaarten_base_default_lng' ),
-				'default_zoom' => get_option( 'openkaarten_base_default_zoom' ),
+				'default_lat'  => get_option( 'openkaarten_base_default_lat', 52.0 ),
+				'default_lng'  => get_option( 'openkaarten_base_default_lng', 4.75 ),
+				'default_zoom' => get_option( 'openkaarten_base_default_zoom', 8 ),
 			],
 			'datasets'   => $posts,
 			'pagination' => [

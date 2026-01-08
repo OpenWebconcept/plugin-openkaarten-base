@@ -62,6 +62,14 @@ class Admin {
 		add_filter( 'manage_owc_ok_datalayer_posts_columns', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'manage_datalayer_posts_columns' ] );
 
 		add_action( 'save_post', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_cache_for_specific_endpoints' ], 10, 1 );
+
+		// Trigger save options for OpenKaarten base settings to flush the cache.
+		add_action( 'add_option_openkaarten_base_default_lat', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_openkaarten_datasets_cache' ] );
+		add_action( 'update_option_openkaarten_base_default_lat', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_openkaarten_datasets_cache' ] );
+		add_action( 'add_option_openkaarten_base_default_lng', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_openkaarten_datasets_cache' ] );
+		add_action( 'update_option_openkaarten_base_default_lng', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_openkaarten_datasets_cache' ] );
+		add_action( 'add_option_openkaarten_base_default_zoom', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_openkaarten_datasets_cache' ] );
+		add_action( 'update_option_openkaarten_base_default_zoom', [ 'Openkaarten_Base_Plugin\Admin\Admin', 'flush_openkaarten_datasets_cache' ] );
 	}
 
 	/**
@@ -508,5 +516,14 @@ class Admin {
 			default:
 				break;
 		}
+	}
+
+	/**
+	 * Flush the OpenKaarten base settings cache.
+	 *
+	 * @return void
+	 */
+	public static function flush_openkaarten_datasets_cache() {
+		Caching::get_instance()->delete_cache_by_endpoint( '%/owc/openkaarten/v1/datasets', Caching::FLUSH_LOOSE, true );
 	}
 }
