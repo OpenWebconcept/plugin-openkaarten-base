@@ -186,13 +186,16 @@ class Importer {
 			}
 
 			// Force update the datalayer url, but without update_post_meta, because this will create an infinite loop.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
 			$wpdb->update(
 				$wpdb->postmeta,
 				[
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- We need to update the meta value.
 					'meta_value' => $meta_value,
 				],
 				[
 					'post_id'  => $post_id,
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- We need to update the meta key.
 					'meta_key' => 'datalayer_url',
 				]
 			);
