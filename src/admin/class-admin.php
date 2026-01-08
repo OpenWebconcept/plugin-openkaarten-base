@@ -524,6 +524,11 @@ class Admin {
 	 * @return void
 	 */
 	public static function flush_openkaarten_datasets_cache() {
+		// Check if the post is saved or updated.
+		if ( ! is_plugin_active( 'wp-rest-cache/wp-rest-cache.php' ) ) {
+			return;
+		}
+
 		Caching::get_instance()->delete_cache_by_endpoint( '%/owc/openkaarten/v1/datasets', Caching::FLUSH_LOOSE, true );
 	}
 }
