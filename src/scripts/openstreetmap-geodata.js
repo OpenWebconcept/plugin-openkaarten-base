@@ -1,7 +1,36 @@
 import L from "leaflet";
 
-// Create the map with the specified configuration.
+let map;
+
+// Create the map with the specified configuration on the page load.
 window.onload = function() {
+  // Initialize the map.
+  initializeMap();
+}
+
+// Re-initialize map when switching radio button location_geometry_geodata_type
+document.querySelectorAll('input[name="location_geometry_geodata_type"]').forEach(input => {
+  input.addEventListener( 'change', function () {
+    // Check if value is 'marker'.
+    if (this.value === 'marker') {
+      // Remove existing map if exists
+      if (map) {
+        map.remove();
+      }
+
+      // Show your map container
+      document.getElementById( 'map-geodata' ).style.display = 'block';
+
+      // Tell Leaflet to recalculate the map size
+      setTimeout( function () {
+        initializeMap();
+      }, 50 );
+    }
+  } );
+});
+
+
+function initializeMap() {
   // Check if there is a div with the ID 'map-geodata'.
   if ( ! document.getElementById( 'map-geodata' ) ) {
     return;
@@ -29,7 +58,7 @@ window.onload = function() {
     "enableBoxZoomControl": true
   }
 
-  const map = new L.Map('map-geodata', {
+  map = new L.Map('map-geodata', {
     center: [config.centerY, config.centerX],
     zoom: config.defaultZoom,
     minZoom: config.minimumZoom,
