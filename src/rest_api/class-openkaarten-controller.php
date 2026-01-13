@@ -602,8 +602,10 @@ class Openkaarten_Controller extends \WP_REST_Posts_Controller {
 					// Get marker information.
 					$item_marker = Locations::get_location_marker( $item->ID, false, $geom_component->getData() );
 					$geom_marker = [
-						'color' => $item_marker['color'],
-						'icon'  => Locations::get_location_marker_url( $item_marker['icon'] ),
+						'color'     => $item_marker['color'],
+						'icon'      => Locations::get_location_marker_url( $item_marker['icon'] ),
+						// In new versions of the Frontend plugin, we use icon_name, but for backwards compatibility we also keep icon.
+						'icon_name' => $item_marker['icon'],
 					];
 
 					$geom_component->setData( 'marker', $geom_marker );
