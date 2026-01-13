@@ -131,7 +131,7 @@ class Admin {
 		// Only include the script on the kaarten edit pages.
 		$screen = get_current_screen();
 
-		if ( ! in_array( $screen->id, [ 'owc_ok_datalayer' ], true ) ) {
+		if ( ! in_array( $screen->id, [ 'owc_ok_datalayer', 'owc_ok_location' ], true ) ) {
 			return;
 		}
 
