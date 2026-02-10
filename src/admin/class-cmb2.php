@@ -91,7 +91,13 @@ class Cmb2 {
 			return;
 		}
 
-		$marker   = $markers[ $group_index ];
+		$marker = $markers[ $group_index ];
+
+		if ( empty( $marker['marker_color'] ) || empty( $marker['marker_icon'] ) ) {
+			echo esc_html__( 'No marker preview available', 'openkaarten-base' );
+			return;
+		}
+
 		$color    = $marker['marker_color'];
 		$icon     = $marker['marker_icon'];
 		$icon_url = Locations::get_location_marker_url( $icon ) ? : '';
