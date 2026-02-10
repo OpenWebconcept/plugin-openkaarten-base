@@ -68,6 +68,7 @@
 			<property name="prefixes" type="array">
 				<element value="Openkaarten_Base"/>
 				<element value="OWC_OPENKAARTEN_BASE"/>
+				<element value="openkaarten"/>
 			</property>
 		</properties>
 	</rule>

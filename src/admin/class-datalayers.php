@@ -1100,7 +1100,7 @@ class Datalayers {
 		try {
 			$geom = geoPHP::load( $data );
 
-			if ( ! $geom->getComponents() && ! $geom->getComponents()[0] ) {
+			if ( ! $geom->getComponents() || ! $geom->getComponents()[0] ) {
 				return [];
 			}
 
@@ -1212,6 +1212,10 @@ class Datalayers {
 		$options       = [];
 		if ( $source_fields ) {
 			foreach ( $source_fields as $field ) {
+				if ( empty( $field['field_label'] ) || empty( $field['field_display_label'] ) ) {
+					continue;
+				}
+
 				$options[ $field['field_label'] ] = $field['field_display_label'];
 			}
 		}
