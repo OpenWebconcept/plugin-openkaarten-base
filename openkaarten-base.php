@@ -13,7 +13,7 @@
  * Plugin Name:       OpenKaarten Base
  * Plugin URI:        https://www.openwebconcept.nl
  * Description:       The OpenKaarten Base plugin.
- * Version:           0.2.6
+ * Version:           0.2.7
  * Author:            Acato
  * Author URI:        https://www.acato.nl
  * License:           EUPL-1.2
@@ -27,7 +27,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'OWC_OPENKAARTEN_BASE_VERSION', '0.2.6' );
+define( 'OWC_OPENKAARTEN_BASE_VERSION', '0.2.7' );
 
 if ( ! defined( 'OWC_OPENKAARTEN_BASE_ABSPATH' ) ) {
 	define( 'OWC_OPENKAARTEN_BASE_ABSPATH', plugin_dir_path( __FILE__ ) );
