@@ -1,4 +1,6 @@
 # Changelog
+## v0.2.7
+- Update package Openkaarten Base Functions.
 
 ## v0.2.6
 - Flush cache when saving settings.
