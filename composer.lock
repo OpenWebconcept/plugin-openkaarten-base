@@ -4,20 +4,19 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5e0ec42baec95a146511deac281937a9",
+    "content-hash": "95b5e13f766c24fdfc0018cb17cca059",
     "packages": [
         {
             "name": "acato-plugins/cmb2-flexible-content",
-            "version": "dev-master",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:acato-plugins/cmb2-flexible-content.git",
-                "reference": "aa1ea795665cd3521570a4698032898561afa799"
+                "reference": "2abd91068992c954dd9a78d5c2ac501b76d2ec80"
             },
             "require": {
                 "php": ">=5.3.0"
             },
-            "default-branch": true,
             "type": "wordpress-plugin",
             "license": [
                 "GPL-2.0"
@@ -39,11 +38,117 @@
             "support": {
                 "issues": "https://github.com/acato-plugins/cmb2-flexible-content"
             },
-            "time": "2024-10-10T13:28:46+00:00"
+            "time": "2026-03-25T09:16:37+00:00"
+        },
+        {
+            "name": "acato-plugins/geophp",
+            "version": "2.0.4",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:acato-plugins/geoPHP.git",
+                "reference": "ce004c556e37be87ac52ab02e40d5f8dd08861e9"
+            },
+            "require": {
+                "php": "^7.1|^8.0"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "2.*",
+                "phpbench/phpbench": "^1.0",
+                "phpstan/phpstan": "^1.4.0",
+                "phpunit/phpunit": "^8.0|^9.0",
+                "squizlabs/php_codesniffer": "3.*"
+            },
+            "suggest": {
+                "ext-geos": "GEOS allows more advanced operations"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "geoPHP\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "geoPHP\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "tests": [
+                    "@performance",
+                    "@bench",
+                    "@unit",
+                    "@test-input"
+                ],
+                "analyze": [
+                    "@cs-warning",
+                    "@stan"
+                ],
+                "all": [
+                    "@analyze",
+                    "echo \"Let's cool down a bit before testing benchmark ...\" && sleep 1",
+                    "@tests"
+                ],
+                "cs": [
+                    "phpcs"
+                ],
+                "cs-warning": [
+                    "phpcs -w"
+                ],
+                "cs-fix": [
+                    "phpcbf"
+                ],
+                "stan": [
+                    "phpstan analyze --no-progress"
+                ],
+                "unit": [
+                    "@putenv XDEBUG_MODE=coverage",
+                    "phpunit"
+                ],
+                "test-input": [
+                    "cd tests && php test.php && cd .."
+                ],
+                "performance": [
+                    "cd tests && php geometryPerformance.php && cd .."
+                ],
+                "bench": [
+                    "vendor/bin/phpbench run --report=aggregate --sleep 10000"
+                ]
+            },
+            "license": [
+                "GPL-2.0-or-later",
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Patrick Hayes",
+                    "role": "Original creator"
+                },
+                {
+                    "name": "Péter Báthory",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Open-source native PHP library for doing geometry operations. Can read and write a wide variety of formats: (E)WKT, (E)WKB, TWKB, GeoJSON, KML, GPX, GeoRSS. Works with all Simple-Feature geometries (Point, LineString, Polygon...) and can be used to get centroids, bounding-boxes, area, etc.",
+            "homepage": "https://github.com/funiq/geoPHP",
+            "keywords": [
+                "converter",
+                "geojson",
+                "geometry",
+                "geophp",
+                "gis",
+                "gpx",
+                "kml",
+                "linestring",
+                "polygon",
+                "twkb",
+                "wkb",
+                "wkt"
+            ],
+            "time": "2026-03-25T09:25:31+00:00"
         },
         {
             "name": "acato/openkaarten-base-functions",
-            "version": "dev-master",
+            "version": "0.1.3",
             "source": {
                 "type": "git",
                 "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git",
@@ -56,7 +161,6 @@
                 "acato/wp-pre-commit-hook": "*",
                 "phpcompatibility/phpcompatibility-wp": "*"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -221,113 +325,6 @@
                 }
             ],
             "time": "2024-06-24T20:46:46+00:00"
-        },
-        {
-            "name": "richardkorthuis/geophp",
-            "version": "dev-development",
-            "source": {
-                "type": "git",
-                "url": "git@github.com:richardkorthuis/geoPHP.git",
-                "reference": "eeb62860346aa76e00a0c6f8520ea6c44c7c2363"
-            },
-            "require": {
-                "php": "^7.1|^8.0"
-            },
-            "require-dev": {
-                "php-coveralls/php-coveralls": "2.*",
-                "phpbench/phpbench": "^1.0",
-                "phpstan/phpstan": "^1.4.0",
-                "phpunit/phpunit": "^8.0|^9.0",
-                "squizlabs/php_codesniffer": "3.*"
-            },
-            "suggest": {
-                "ext-geos": "GEOS allows more advanced operations"
-            },
-            "default-branch": true,
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "geoPHP\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "geoPHP\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "tests": [
-                    "@performance",
-                    "@bench",
-                    "@unit",
-                    "@test-input"
-                ],
-                "analyze": [
-                    "@cs-warning",
-                    "@stan"
-                ],
-                "all": [
-                    "@analyze",
-                    "echo \"Let's cool down a bit before testing benchmark ...\" && sleep 1",
-                    "@tests"
-                ],
-                "cs": [
-                    "phpcs"
-                ],
-                "cs-warning": [
-                    "phpcs -w"
-                ],
-                "cs-fix": [
-                    "phpcbf"
-                ],
-                "stan": [
-                    "phpstan analyze --no-progress"
-                ],
-                "unit": [
-                    "@putenv XDEBUG_MODE=coverage",
-                    "phpunit"
-                ],
-                "test-input": [
-                    "cd tests && php test.php && cd .."
-                ],
-                "performance": [
-                    "cd tests && php geometryPerformance.php && cd .."
-                ],
-                "bench": [
-                    "vendor/bin/phpbench run --report=aggregate --sleep 10000"
-                ]
-            },
-            "license": [
-                "GPL-2.0-or-later",
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Patrick Hayes",
-                    "role": "Original creator"
-                },
-                {
-                    "name": "Péter Báthory",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Open-source native PHP library for doing geometry operations. Can read and write a wide variety of formats: (E)WKT, (E)WKB, TWKB, GeoJSON, KML, GPX, GeoRSS. Works with all Simple-Feature geometries (Point, LineString, Polygon...) and can be used to get centroids, bounding-boxes, area, etc.",
-            "homepage": "https://github.com/funiq/geoPHP",
-            "keywords": [
-                "converter",
-                "geojson",
-                "geometry",
-                "geophp",
-                "gis",
-                "gpx",
-                "kml",
-                "linestring",
-                "polygon",
-                "twkb",
-                "wkb",
-                "wkt"
-            ],
-            "time": "2025-07-15T12:03:09+00:00"
         },
         {
             "name": "wpackagist-plugin/cmb2",
@@ -1066,11 +1063,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "richardkorthuis/geophp": 20,
-        "acato-plugins/cmb2-flexible-content": 20,
-        "acato/openkaarten-base-functions": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],

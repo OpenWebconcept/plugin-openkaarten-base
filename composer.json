@@ -13,15 +13,24 @@
     "repositories": [
         {
             "type": "git",
-            "url": "git@bitbucket.org:acato/wp-pre-commit-hook.git"
+            "url": "git@bitbucket.org:acato/wp-pre-commit-hook.git",
+            "only": [
+                "acato/wp-pre-commit-hook"
+            ]
         },
         {
             "type": "git",
-            "url": "git@github.com:richardkorthuis/geoPHP.git"
+            "url": "git@github.com:acato-plugins/geoPHP.git",
+            "only": [
+                "acato-plugins/geophp"
+            ]
         },
         {
             "type": "git",
-            "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git"
+            "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git",
+            "only": [
+                "acato/openkaarten-base-functions"
+            ]
         },
         {
             "type": "composer",
@@ -33,15 +42,18 @@
         },
         {
             "type": "git",
-            "url": "git@github.com:acato-plugins/cmb2-flexible-content.git"
+            "url": "git@github.com:acato-plugins/cmb2-flexible-content.git",
+            "only": [
+                "acato-plugins/cmb2-flexible-content"
+            ]
         }
     ],
     "require" : {
         "composer/installers" : "^1.0 || ^2.0",
-        "richardkorthuis/geophp": "dev-development",
+        "acato-plugins/geophp": "*",
         "wpackagist-plugin/cmb2": "*",
-        "acato-plugins/cmb2-flexible-content": "dev-master",
-        "acato/openkaarten-base-functions": "dev-master"
+        "acato-plugins/cmb2-flexible-content": "*",
+        "acato/openkaarten-base-functions": "*"
     },
     "require-dev" : {
         "acato/wp-pre-commit-hook": "*",
