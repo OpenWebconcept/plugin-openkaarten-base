@@ -1,4 +1,7 @@
 # Changelog
+## v0.2.9
+- Cleanup of dependencies, change origins, load through packagist.
+
 ## v0.2.8
 - Fix issue with executing cmb2 conditional logic script on all admin pages.
 
