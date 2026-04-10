@@ -273,7 +273,7 @@ class Locations {
 		$markers      = get_post_meta( $datalayer_id, 'markers', true );
 
 		$color = get_post_meta( $datalayer_id, 'default_marker_color', true );
-		$icon  = false;
+		$icon  = get_post_meta( $datalayer_id, 'default_marker_icon', true );
 
 		$datalayer_url_type = get_post_meta( $datalayer_id, 'datalayer_url_type', true ) ? : 'import';
 
