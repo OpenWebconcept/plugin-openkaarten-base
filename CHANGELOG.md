@@ -1,4 +1,7 @@
 # Changelog
+## v0.3.0
+- Added settings for default marker color and default marker icon.
+
 ## v0.2.9
 - Cleanup of dependencies, change origins, load through packagist.
 
