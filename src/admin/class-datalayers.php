@@ -576,7 +576,19 @@ class Datalayers {
 
 		$cmb->add_field(
 			[
+				'name'             => __( 'Default marker icon', 'openkaarten-base' ),
+				'desc'             => __( 'Select the default icon for the marker for the whole datalayer.', 'openkaarten-base' ),
+				'id'               => 'default_marker_icon',
+				'type'             => 'select',
+				'show_option_none' => true,
+				'options_cb'       => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'cmb2_marker_icons_options' ],
+			]
+		);
+
+		$cmb->add_field(
+			[
 				'name'    => __( 'Default marker color', 'openkaarten-base' ),
+				'desc'    => __( 'Select the default color for the marker for the whole datalayer.', 'openkaarten-base' ),
 				'id'      => 'default_marker_color',
 				'type'    => 'select',
 				'default' => 'marker-blue', // default 'Blue'.
@@ -635,6 +647,7 @@ class Datalayers {
 			$group_field_id,
 			[
 				'name'    => __( 'Marker color', 'openkaarten-base' ),
+				'desc'    => __( 'Select the color for the marker.', 'openkaarten-base' ),
 				'id'      => 'marker_color',
 				'type'    => 'select',
 				'default' => 'marker-black', // Default 'Black'.
