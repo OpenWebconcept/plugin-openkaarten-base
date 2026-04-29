@@ -157,7 +157,12 @@ class Helper {
 					continue;
 				}
 
-				$item_data['properties'][ $source_field['field_display_label'] ] = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
+				// Check if post meta is object, then convert it to an array.
+				$field_value = get_post_meta( $location_id, 'field_' . $source_field['field_label'], true );
+				if ( is_object( $field_value ) ) {
+					$field_value = (array) $field_value;
+				}
+				$item_data['properties'][ $source_field['field_display_label'] ] = $field_value;
 			}
 		}
 
