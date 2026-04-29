@@ -1,4 +1,13 @@
 # Changelog
+## v0.3.0
+- Added settings for default marker color and default marker icon.
+
+## v0.2.9
+- Cleanup of dependencies, change origins, load through packagist.
+
+## v0.2.8
+- Fix issue with executing cmb2 conditional logic script on all admin pages.
+
 ## v0.2.7
 - Update package Openkaarten Base Functions.
 

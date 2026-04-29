@@ -12,36 +12,20 @@
     ],
     "repositories": [
         {
-            "type": "git",
-            "url": "git@bitbucket.org:acato/wp-pre-commit-hook.git"
-        },
-        {
-            "type": "git",
-            "url": "git@github.com:richardkorthuis/geoPHP.git"
-        },
-        {
-            "type": "git",
-            "url": "git@github.com:OpenWebconcept/package-owc-openkaarten-functions.git"
-        },
-        {
             "type": "composer",
             "url": "https://wpackagist.org",
             "only": [
                 "wpackagist-plugin/*",
                 "wpackagist-theme/*"
             ]
-        },
-        {
-            "type": "git",
-            "url": "git@github.com:acato-plugins/cmb2-flexible-content.git"
         }
     ],
     "require" : {
         "composer/installers" : "^1.0 || ^2.0",
-        "richardkorthuis/geophp": "dev-development",
+        "acato-plugins/geophp": "*",
         "wpackagist-plugin/cmb2": "*",
-        "acato-plugins/cmb2-flexible-content": "dev-master",
-        "acato/openkaarten-base-functions": "dev-master"
+        "acato-plugins/cmb2-flexible-content": "*",
+        "acato/openkaarten-base-functions": "*"
     },
     "require-dev" : {
         "acato/wp-pre-commit-hook": "*",
