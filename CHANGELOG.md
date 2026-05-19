@@ -1,4 +1,8 @@
 # Changelog
+## v0.3.1
+- Changed the marker color hex values.
+- Fixed converting objects to arrays for locations in the datalayer.
+
 ## v0.3.0
 - Added settings for default marker color and default marker icon.
 
