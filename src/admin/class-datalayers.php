@@ -1119,12 +1119,14 @@ class Datalayers {
 		try {
 			$geom = geoPHP::load( $data );
 
-			if ( ! $geom->getComponents() && ! $geom->getComponents()[0] ) {
+			$components = $geom->getComponents();
+			if ( empty( $components ) || empty( $components[0] ) ) {
 				return [];
 			}
 
-			if ( $geom->getComponents()[0]->getData() ) {
-				foreach ( $geom->getComponents()[0]->getData() as $key => $val ) {
+			$components_properties = $components[0]->getData();
+			if ( $components_properties ) {
+				foreach ( $components_properties as $key => $val ) {
 					$source_fields[] = $key;
 				}
 			} else {
