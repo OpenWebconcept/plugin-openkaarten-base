@@ -109,6 +109,8 @@ The marker icons are SVG icons that are supplied by the OpenGemeenten Iconenset.
 ### Tooltip ###
 For each datalayer a tooltip can be created. The tooltip can be customized by selecting the properties that should be shown in the tooltip. The tooltip will be shown in the OpenKaarten Frontend plugin map.
 
+A tooltip image (URL and alt text) can be configured per datalayer in the "Tooltip configuration" metabox. Only one image is supported per datalayer; the image is always rendered as the first item in the tooltip, above any other sortable tooltip items.
+
 ### Deleting datalayers and locations
 Datalayers and locations can be deleted via the WordPress admin panel. Go to the Datalayers or Locations menu, hover over the datalayer or location you want to delete and click on the 'Trash' link. If a datalayer is deleted, all connected locations will also be deleted.
 
