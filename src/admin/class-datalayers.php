@@ -303,7 +303,7 @@ class Datalayers {
 			$source_fields = [ 'title' ];
 		}
 
-		$source_fields = array_map(
+		$source_fields_for_title_mapping = array_map(
 			function ( $field ) {
 				return '{' . $field . '}';
 			},
@@ -325,14 +325,14 @@ class Datalayers {
 				'id'         => 'title_field_mapping',
 				'type'       => 'text',
 				// translators: %s: source fields.
-				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s.', 'openkaarten-base' ), implode( ', ', $source_fields ) ) .
+				'desc'       => sprintf( __( 'Use the source fields to compose the title of a location. Place the fields in {brackets}. You can use the following fields for this datalayer:<br />%s.', 'openkaarten-base' ), implode( ', ', $source_fields_for_title_mapping ) ) .
 								'<br /><span style="color: red;"><strong>' . __( 'Be aware: updating this field will automatically sync all items!', 'openkaarten-base' ) . '</strong></span>',
 				'attributes' => [
 					'required'               => 'required',
 					'data-conditional-id'    => 'datalayer_type',
 					'data-conditional-value' => wp_json_encode( [ 'fileinput', 'url' ] ),
 				],
-				'default'    => ! empty( $source_fields ) ? $source_fields[0] : '',
+				'default'    => ! empty( $source_fields_for_title_mapping ) ? $source_fields_for_title_mapping[0] : '',
 			]
 		);
 
@@ -896,6 +896,12 @@ class Datalayers {
 			$datalayer_properties = $data->getComponents()[0]->getData();
 
 			if ( empty( $datalayer_properties ) ) {
+				// Fallback to get the properties from the $geom directly instead of the components. This is needed for some GeoJSON files that don't have the properties in the components, but directly in the geometry.
+				$datalayer_properties = $data->getData();
+			}
+
+			// If there are still no properties, return the default value.
+			if ( empty( $datalayer_properties ) ) {
 				return $value;
 			}
 
@@ -1120,6 +1126,14 @@ class Datalayers {
 			if ( $geom->getComponents()[0]->getData() ) {
 				foreach ( $geom->getComponents()[0]->getData() as $key => $val ) {
 					$source_fields[] = $key;
+				}
+			} else {
+				// Fallback to get the properties from the $geom directly instead of the components. This is needed for some GeoJSON files that don't have the properties in the components, but directly in the geometry.
+				$geom_properties = $geom->getData();
+				if ( $geom_properties ) {
+					foreach ( $geom_properties as $key => $val ) {
+						$source_fields[] = $key;
+					}
 				}
 			}
 		} catch ( IOException $e ) {
