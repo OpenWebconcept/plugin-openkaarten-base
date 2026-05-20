@@ -1230,9 +1230,16 @@ class Datalayers {
 		$datalayers = get_posts(
 			[
 				'post_type'      => 'owc_ok_datalayer',
-				'post_status'    => 'any',
+				'post_status'    => [ 'publish', 'draft', 'pending', 'private', 'future', 'trash' ],
 				'posts_per_page' => -1,
 				'fields'         => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Necessary to scope the migration to posts that actually have tooltip data.
+				'meta_query'     => [
+					[
+						'key'     => 'tooltip',
+						'compare' => 'EXISTS',
+					],
+				],
 			]
 		);
 
