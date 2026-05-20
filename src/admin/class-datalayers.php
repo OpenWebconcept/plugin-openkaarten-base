@@ -436,7 +436,7 @@ class Datalayers {
 				'name'            => __( 'Image URL', 'openkaarten-base' ),
 				'id'              => 'tooltip_image_url',
 				'type'            => 'text',
-				'sanitization_cb' => 'sanitize_text_field',
+				'sanitization_cb' => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'sanitize_tooltip_image_url' ],
 			]
 		);
 
@@ -1131,6 +1131,28 @@ class Datalayers {
 		}
 
 		return $source_fields;
+	}
+
+	/**
+	 * Sanitize the tooltip image URL field.
+	 *
+	 * If the value is a source-field token (e.g. `{image_url}`), sanitize as plain text
+	 * so the braces survive; otherwise sanitize as a URL.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return string The sanitized value.
+	 */
+	public static function sanitize_tooltip_image_url( $value ) {
+		if ( ! is_string( $value ) || '' === $value ) {
+			return '';
+		}
+
+		if ( preg_match( '/^\{[^{}]+\}$/', trim( $value ) ) ) {
+			return sanitize_text_field( $value );
+		}
+
+		return esc_url_raw( $value );
 	}
 
 	/**
