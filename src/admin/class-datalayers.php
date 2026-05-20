@@ -433,17 +433,19 @@ class Datalayers {
 
 		$cmb->add_field(
 			[
-				'name' => __( 'Image URL', 'openkaarten-base' ),
-				'id'   => 'tooltip_image_url',
-				'type' => 'text',
+				'name'            => __( 'Image URL', 'openkaarten-base' ),
+				'id'              => 'tooltip_image_url',
+				'type'            => 'text',
+				'sanitization_cb' => 'sanitize_text_field',
 			]
 		);
 
 		$cmb->add_field(
 			[
-				'name' => __( 'Image Alt Text', 'openkaarten-base' ),
-				'id'   => 'tooltip_image_alt_text',
-				'type' => 'text',
+				'name'            => __( 'Image Alt Text', 'openkaarten-base' ),
+				'id'              => 'tooltip_image_alt_text',
+				'type'            => 'text',
+				'sanitization_cb' => 'sanitize_text_field',
 			]
 		);
 
@@ -1223,6 +1225,10 @@ class Datalayers {
 	 * @return void
 	 */
 	public static function migrate_tooltip_image_to_top_level() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		if ( get_option( 'openkaarten_base_tooltip_image_migrated' ) ) {
 			return;
 		}
