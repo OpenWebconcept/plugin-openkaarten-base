@@ -93,6 +93,7 @@ class Datalayers {
 
 		add_action( 'init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'register_datalayer_post_type' ] );
 		add_action( 'wp_trash_post', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'delete_datalayer_locations' ], 10, 1 );
+		add_action( 'admin_init', [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'migrate_tooltip_image_to_top_level' ] );
 
 		// Check the post type of the CMB object, otherwise this code is also executed on other post types.
 		$post_type = get_post_type( self::$cmb_object_id );
@@ -432,6 +433,24 @@ class Datalayers {
 
 		$cmb->add_field(
 			[
+				'name'            => __( 'Image URL', 'openkaarten-base' ),
+				'id'              => 'tooltip_image_url',
+				'type'            => 'text',
+				'sanitization_cb' => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'sanitize_tooltip_image_url' ],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name'            => __( 'Image Alt Text', 'openkaarten-base' ),
+				'id'              => 'tooltip_image_alt_text',
+				'type'            => 'text',
+				'sanitization_cb' => 'sanitize_text_field',
+			]
+		);
+
+		$cmb->add_field(
+			[
 				'id'         => 'tooltip',
 				'type'       => 'flexible',
 				'options'    => [
@@ -439,21 +458,6 @@ class Datalayers {
 				],
 				'show_on_cb' => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'show_field_mapping_metabox' ],
 				'layouts'    => [
-					'image'  => [
-						'title'  => __( 'Image', 'openkaarten-base' ),
-						'fields' => [
-							[
-								'type' => 'text',
-								'name' => __( 'Image URL', 'openkaarten-base' ),
-								'id'   => 'image_url',
-							],
-							[
-								'type' => 'text',
-								'name' => __( 'Image Alt Text', 'openkaarten-base' ),
-								'id'   => 'image_alt_text',
-							],
-						],
-					],
 					'title'  => [
 						'title'  => __( 'Title', 'openkaarten-base' ),
 						'fields' => [
@@ -1146,6 +1150,28 @@ class Datalayers {
 	}
 
 	/**
+	 * Sanitize the tooltip image URL field.
+	 *
+	 * If the value is a source-field token (e.g. `{image_url}`), sanitize as plain text
+	 * so the braces survive; otherwise sanitize as a URL.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return string The sanitized value.
+	 */
+	public static function sanitize_tooltip_image_url( $value ) {
+		if ( ! is_string( $value ) || '' === $value ) {
+			return '';
+		}
+
+		if ( preg_match( '/^\{[^{}]+\}$/', trim( $value ) ) ) {
+			return sanitize_text_field( $value );
+		}
+
+		return esc_url_raw( $value );
+	}
+
+	/**
 	 * Save the datalayer fields.
 	 *
 	 * @param int    $object_id The object ID.
@@ -1227,6 +1253,79 @@ class Datalayers {
 				}
 			}
 		}
+	}
+
+	/**
+	 * One-shot migration: lift the image entry out of the `tooltip` flexible field
+	 * into the top-level `tooltip_image_url` / `tooltip_image_alt_text` meta keys,
+	 * and remove all image entries from the `tooltip` array.
+	 *
+	 * @return void
+	 */
+	public static function migrate_tooltip_image_to_top_level() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		if ( get_option( 'openkaarten_base_tooltip_image_migrated' ) ) {
+			return;
+		}
+
+		$datalayers = get_posts(
+			[
+				'post_type'      => 'owc_ok_datalayer',
+				'post_status'    => [ 'publish', 'draft', 'pending', 'private', 'future', 'trash' ],
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Necessary to scope the migration to posts that actually have tooltip data.
+				'meta_query'     => [
+					[
+						'key'     => 'tooltip',
+						'compare' => 'EXISTS',
+					],
+				],
+			]
+		);
+
+		foreach ( $datalayers as $datalayer_id ) {
+			$tooltip = get_post_meta( $datalayer_id, 'tooltip', true );
+
+			if ( ! is_array( $tooltip ) || empty( $tooltip ) ) {
+				continue;
+			}
+
+			$image_url      = '';
+			$image_alt_text = '';
+			$remaining      = [];
+			$found_image    = false;
+
+			foreach ( $tooltip as $entry ) {
+				if ( is_array( $entry ) && isset( $entry['layout'] ) && 'image' === $entry['layout'] ) {
+					if ( ! $found_image ) {
+						$image_url      = $entry['image_url'] ?? '';
+						$image_alt_text = $entry['image_alt_text'] ?? '';
+						$found_image    = true;
+					}
+					continue;
+				}
+				$remaining[] = $entry;
+			}
+
+			if ( ! $found_image ) {
+				continue;
+			}
+
+			if ( '' !== $image_url ) {
+				update_post_meta( $datalayer_id, 'tooltip_image_url', $image_url );
+			}
+			if ( '' !== $image_alt_text ) {
+				update_post_meta( $datalayer_id, 'tooltip_image_alt_text', $image_alt_text );
+			}
+
+			update_post_meta( $datalayer_id, 'tooltip', array_values( $remaining ) );
+		}
+
+		update_option( 'openkaarten_base_tooltip_image_migrated', 1, false );
 	}
 
 	/**

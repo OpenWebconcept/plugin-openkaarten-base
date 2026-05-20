@@ -417,7 +417,23 @@ class Locations {
 	public static function get_location_tooltip( $datalayer_id, $location_id = false, $location_data = false ) {
 		$tooltip = get_post_meta( $datalayer_id, 'tooltip', true );
 
-		if ( ! $tooltip ) {
+		if ( ! is_array( $tooltip ) ) {
+			$tooltip = [];
+		}
+
+		$tooltip_image_url = get_post_meta( $datalayer_id, 'tooltip_image_url', true );
+		if ( ! empty( $tooltip_image_url ) ) {
+			array_unshift(
+				$tooltip,
+				[
+					'layout'         => 'image',
+					'image_url'      => $tooltip_image_url,
+					'image_alt_text' => get_post_meta( $datalayer_id, 'tooltip_image_alt_text', true ),
+				]
+			);
+		}
+
+		if ( empty( $tooltip ) ) {
 			return [];
 		}
 
