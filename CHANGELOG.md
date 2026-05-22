@@ -1,4 +1,8 @@
 # Changelog
+## v0.3.2
+- Fixed importing of properties for certain json files.
+- Changed the tooltip configurator so the image is fixed at the top and limited to only 1 image per tooltip.
+
 ## v0.3.1
 - Changed the marker color hex values.
 - Fixed converting objects to arrays for locations in the datalayer.
