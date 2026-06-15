@@ -176,7 +176,7 @@ class Admin {
 		wp_enqueue_script(
 			'owc_ok-openstreetmap-base',
 			self::mix( '/scripts/openstreetmap-base.js' ),
-			[],
+			[ 'jquery' ],
 			OWC_OPENKAARTEN_BASE_VERSION,
 			true
 		);
@@ -191,7 +191,7 @@ class Admin {
 		wp_enqueue_script(
 			'owc_ok-openstreetmap-geodata',
 			self::mix( '/scripts/openstreetmap-geodata.js' ),
-			[],
+			[ 'jquery' ],
 			OWC_OPENKAARTEN_BASE_VERSION,
 			true
 		);

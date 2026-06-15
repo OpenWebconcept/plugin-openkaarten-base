@@ -75,9 +75,15 @@ function initializeMap() {
   if (setMarker) {
     // Add a marker for every location in the markers array.
     markersArray.forEach( function( location ) {
-      addMarker( map, location[1], location[0], false );
+      addMarker( map, location[1], location[0] );
     } );
   }
+
+  // Make sure Leaflet (re)calculates its container size whenever the map becomes
+  // visible or its dimensions change. This covers the cases that previously left
+  // the map grey until a manual window resize: the initial layout settling in the
+  // (Gutenberg) meta-box area, the conditional row becoming visible, and resizes.
+  ensureMapSize( map, document.getElementById( 'map-geodata' ) );
 
   map.on( 'click', function (e) {
     var coord = e.latlng;
@@ -90,11 +96,51 @@ function initializeMap() {
   } );
 };
 
-function addMarker( map, lat, lng ) {
-  // Create a custom marker icon with the location color and icon.
-  let customIconHtml = "<div class='marker-pin " + location.color + "'></div>";
-  if (location.icon) {
-    customIconHtml += "<span class='marker-icon'><img src='" + location.icon + "'  alt='marker icon' /></span>";
+/**
+ * Keep the Leaflet map sized to its container.
+ *
+ * @param {L.Map}       map     The Leaflet map instance.
+ * @param {HTMLElement} element The map container element.
+ */
+function ensureMapSize( map, element ) {
+  // Recalculate once the first render is done, on the next tick so the browser
+  // has applied layout.
+  map.whenReady( function () {
+    setTimeout( function () {
+      map.invalidateSize();
+    }, 0 );
+  } );
+
+  // A ResizeObserver fires when the container gains or changes size, which is
+  // exactly when Leaflet needs to recalculate. This handles the container going
+  // from hidden/0px to visible without relying on fragile event ordering.
+  if ( 'ResizeObserver' in window && element ) {
+    let lastWidth = 0;
+    const observer = new ResizeObserver( function () {
+      if ( element.offsetWidth > 0 && element.offsetWidth !== lastWidth ) {
+        lastWidth = element.offsetWidth;
+        map.invalidateSize();
+      }
+    } );
+    observer.observe( element );
+  }
+}
+
+/**
+ * Add a draggable marker to the map.
+ *
+ * @param {L.Map}  map   The Leaflet map instance.
+ * @param {number} lat   Latitude.
+ * @param {number} lng   Longitude.
+ * @param {string} color Optional marker pin colour class. Falls back to the CSS default.
+ * @param {string} icon  Optional marker icon URL.
+ */
+function addMarker( map, lat, lng, color, icon ) {
+  // Create a custom marker icon. Only add a colour class when one is explicitly
+  // provided; otherwise let the .marker-pin CSS default apply.
+  let customIconHtml = "<div class='marker-pin" + ( color ? " " + color : "" ) + "'></div>";
+  if ( icon ) {
+    customIconHtml += "<span class='marker-icon'><img src='" + icon + "'  alt='marker icon' /></span>";
   }
 
   var customIcon = L.divIcon( {

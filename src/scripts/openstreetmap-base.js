@@ -83,4 +83,38 @@ function initializeMap() {
       } ).addTo( map );
     }
   }
+
+  // Make sure Leaflet (re)calculates its container size whenever the map becomes
+  // visible or its dimensions change (initial layout, tabs/accordions, window
+  // resize). Without this the map can stay grey until a manual window resize.
+  ensureMapSize( map, document.getElementById( 'map-base' ) );
+}
+
+/**
+ * Keep the Leaflet map sized to its container.
+ *
+ * @param {L.Map}       map     The Leaflet map instance.
+ * @param {HTMLElement} element The map container element.
+ */
+function ensureMapSize( map, element ) {
+  // Recalculate once the first render is done, on the next tick so the browser
+  // has applied layout.
+  map.whenReady( function () {
+    setTimeout( function () {
+      map.invalidateSize();
+    }, 0 );
+  } );
+
+  // A ResizeObserver fires when the container gains or changes size, which is
+  // exactly when Leaflet needs to recalculate.
+  if ( 'ResizeObserver' in window && element ) {
+    let lastWidth = 0;
+    const observer = new ResizeObserver( function () {
+      if ( element.offsetWidth > 0 && element.offsetWidth !== lastWidth ) {
+        lastWidth = element.offsetWidth;
+        map.invalidateSize();
+      }
+    } );
+    observer.observe( element );
+  }
 }
