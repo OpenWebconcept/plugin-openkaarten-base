@@ -1,4 +1,13 @@
 # Changelog
+## v0.3.3
+- Fixed: maps on the location and datalayer edit screens could stay grey / only load the top-left tile until the browser window was resized. Maps now recalculate their size via a ResizeObserver (and map.whenReady), so they render correctly on initial load and when becoming visible.
+- Fixed: addMarker() referenced an undefined `location` variable (the global window.location) for the marker colour/icon; colour and icon are now optional parameters with a sensible CSS default.
+- Improved: the openstreetmap-base and openstreetmap-geodata scripts now declare their jquery dependency.
+
+## v0.3.2
+- Fixed importing of properties for certain json files.
+- Changed the tooltip configurator so the image is fixed at the top and limited to only 1 image per tooltip.
+
 ## v0.3.1
 - Changed the marker color hex values.
 - Fixed converting objects to arrays for locations in the datalayer.
