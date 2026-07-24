@@ -91,10 +91,11 @@ class Cmb2 {
 			return;
 		}
 
-		$marker   = $markers[ $group_index ];
-		$color    = $marker['marker_color'];
-		$icon     = $marker['marker_icon'];
-		$icon_url = Locations::get_location_marker_url( $icon ) ? : '';
+		$marker      = $markers[ $group_index ];
+		$color_value = ! empty( $marker['marker_color_custom'] ) ? $marker['marker_color_custom'] : ( isset( $marker['marker_color'] ) ? $marker['marker_color'] : '' );
+		$color       = Datalayers::resolve_marker_color_hex( $color_value );
+		$icon        = $marker['marker_icon'];
+		$icon_url    = Locations::get_location_marker_url( $icon ) ? : '';
 
 		echo "<div class='leaflet-custom-icon'><div style='background-color:" . esc_attr( $color ) . ";' class='marker-pin'></div><span class='marker-icon'><img src='" . esc_attr( $icon_url ) . "' /></span></div>";
 	}

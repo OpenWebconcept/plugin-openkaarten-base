@@ -1,4 +1,7 @@
 # Changelog
+## v0.3.4
+- Added: support for custom marker hex colors. A color picker is now available for the datalayer default marker color and for each per-value marker, so you can override the predefined marker colors with any custom hex value. Custom colors are applied inline on the map, while preset colors keep using their `marker-<name>` CSS classes.
+
 ## v0.3.3
 - Fixed: maps on the location and datalayer edit screens could stay grey / only load the top-left tile until the browser window was resized. Maps now recalculate their size via a ResizeObserver (and map.whenReady), so they render correctly on initial load and when becoming visible.
 - Fixed: addMarker() referenced an undefined `location` variable (the global window.location) for the marker colour/icon; colour and icon are now optional parameters with a sensible CSS default.
