@@ -63,8 +63,13 @@ function initializeMap() {
       const geojsonData = location.feature;
       const content = location.content;
 
-      // Create a custom marker icon with the location color and icon.
-      let customIconHtml = "<div class='marker-pin " + location.color + "'></div>";
+      // Create a custom marker icon with the location color and icon. A custom
+      // color is stored as a hex value and applied inline; a preset color is a
+      // "marker-<name>" class that the stylesheet maps to a hex.
+      const isHexColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test( location.color || "" );
+      let customIconHtml = isHexColor
+        ? "<div class='marker-pin' style='background-color:" + location.color + "'></div>"
+        : "<div class='marker-pin " + location.color + "'></div>";
       if (location.icon) {
         customIconHtml += "<span class='marker-icon'><img src='" + location.icon + "'  alt='marker icon' /></span>";
       }

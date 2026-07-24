@@ -537,6 +537,72 @@ class Datalayers {
 	}
 
 	/**
+	 * Returns an associative array mapping the predefined marker-color class
+	 * names to their hex color values.
+	 *
+	 * This mirrors get_marker_color_options() but provides the actual hex values,
+	 * so the color-picker swatches and any place that needs to render a preset
+	 * class as a real color can share a single source of truth.
+	 *
+	 * @return array Associative array of marker-color class names and their hex values.
+	 */
+	public static function get_marker_color_palette() {
+		$default_palette = [
+			'marker-black'       => '#000000',
+			'marker-blue'        => '#0072B2',
+			'marker-brown'       => '#A0522D',
+			'marker-darkgray'    => '#555555',
+			'marker-deep-purple' => '#4B0082',
+			'marker-gray'        => '#757575',
+			'marker-green'       => '#328725',
+			'marker-navy-blue'   => '#001D5F',
+			'marker-orange'      => '#F4801B',
+			'marker-purple'      => '#792487',
+			'marker-red'         => '#9F0000',
+			'marker-turquoise'   => '#3B7BA0',
+			'marker-yellow'      => '#7E7722',
+		];
+
+		return apply_filters( 'openkaarten_marker_color_palette', $default_palette );
+	}
+
+	/**
+	 * Check whether a value is a valid hex color (#rgb or #rrggbb).
+	 *
+	 * @param mixed $value The value to check.
+	 *
+	 * @return bool Whether the value is a hex color.
+	 */
+	public static function is_hex_color( $value ) {
+		return is_string( $value ) && 1 === preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $value );
+	}
+
+	/**
+	 * Resolve a stored marker-color value to a hex color.
+	 *
+	 * Accepts either a custom hex value (e.g. '#ff5733'), which is returned as-is,
+	 * or a predefined marker-color class name (e.g. 'marker-blue'), which is looked
+	 * up in the color palette. Returns an empty string when the value can't be resolved.
+	 *
+	 * @param string $value The stored marker-color value (hex or class name).
+	 *
+	 * @return string The resolved hex color, or an empty string.
+	 */
+	public static function resolve_marker_color_hex( $value ) {
+		if ( empty( $value ) ) {
+			return '';
+		}
+
+		if ( self::is_hex_color( $value ) ) {
+			return $value;
+		}
+
+		$palette = self::get_marker_color_palette();
+
+		return isset( $palette[ $value ] ) ? $palette[ $value ] : '';
+	}
+
+	/**
 	 * Customize the available marker color options for map markers.
 	 *
 	 * This function allows additional marker colors to be added or existing ones to be modified
@@ -602,6 +668,22 @@ class Datalayers {
 
 		$cmb->add_field(
 			[
+				'name'       => __( 'Default custom marker color', 'openkaarten-base' ),
+				'desc'       => __( 'Optional. Pick a custom color to override the selected default marker color above.', 'openkaarten-base' ),
+				'id'         => 'default_marker_color_custom',
+				'type'       => 'colorpicker',
+				'attributes' => [
+					'data-colorpicker' => wp_json_encode(
+						[
+							'palettes' => array_values( self::get_marker_color_palette() ),
+						]
+					),
+				],
+			]
+		);
+
+		$cmb->add_field(
+			[
 				'name'       => __( 'Field to customize marker on', 'openkaarten-base' ),
 				'desc'       => __( 'Select the field that determines what marker should be shown.', 'openkaarten-base' ),
 				'id'         => 'marker_field',
@@ -656,6 +738,23 @@ class Datalayers {
 				'type'    => 'select',
 				'default' => 'marker-black', // Default 'Black'.
 				'options' => self::get_marker_color_options(),
+			]
+		);
+
+		$cmb->add_group_field(
+			$group_field_id,
+			[
+				'name'       => __( 'Custom marker color', 'openkaarten-base' ),
+				'desc'       => __( 'Optional. Pick a custom color to override the selected marker color above.', 'openkaarten-base' ),
+				'id'         => 'marker_color_custom',
+				'type'       => 'colorpicker',
+				'attributes' => [
+					'data-colorpicker' => wp_json_encode(
+						[
+							'palettes' => array_values( self::get_marker_color_palette() ),
+						]
+					),
+				],
 			]
 		);
 

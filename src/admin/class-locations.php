@@ -272,8 +272,9 @@ class Locations {
 		$marker_field = get_post_meta( $datalayer_id, 'marker_field', true );
 		$markers      = get_post_meta( $datalayer_id, 'markers', true );
 
-		$color = get_post_meta( $datalayer_id, 'default_marker_color', true );
-		$icon  = get_post_meta( $datalayer_id, 'default_marker_icon', true );
+		$default_custom_color = get_post_meta( $datalayer_id, 'default_marker_color_custom', true );
+		$color                = ! empty( $default_custom_color ) ? $default_custom_color : get_post_meta( $datalayer_id, 'default_marker_color', true );
+		$icon                 = get_post_meta( $datalayer_id, 'default_marker_icon', true );
 
 		$datalayer_url_type = get_post_meta( $datalayer_id, 'datalayer_url_type', true ) ? : 'import';
 
@@ -302,7 +303,9 @@ class Locations {
 				}
 
 				if ( isset( $marker_data['field_value'] ) && $location_marker_field === $marker_data['field_value'] ) {
-					if ( ! empty( $marker_data['marker_color'] ) ) {
+					if ( ! empty( $marker_data['marker_color_custom'] ) ) {
+						$color = $marker_data['marker_color_custom'];
+					} elseif ( ! empty( $marker_data['marker_color'] ) ) {
 						$color = $marker_data['marker_color'];
 					}
 					if ( ! empty( $marker_data['marker_icon'] ) ) {

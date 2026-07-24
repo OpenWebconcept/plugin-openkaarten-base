@@ -136,9 +136,13 @@ function ensureMapSize( map, element ) {
  * @param {string} icon  Optional marker icon URL.
  */
 function addMarker( map, lat, lng, color, icon ) {
-  // Create a custom marker icon. Only add a colour class when one is explicitly
-  // provided; otherwise let the .marker-pin CSS default apply.
-  let customIconHtml = "<div class='marker-pin" + ( color ? " " + color : "" ) + "'></div>";
+  // Create a custom marker icon. A custom colour is stored as a hex value and
+  // applied inline; a preset colour is a "marker-<name>" class the stylesheet
+  // maps to a hex. When no colour is provided, let the .marker-pin CSS default apply.
+  const isHexColor = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test( color || "" );
+  let customIconHtml = isHexColor
+    ? "<div class='marker-pin' style='background-color:" + color + "'></div>"
+    : "<div class='marker-pin" + ( color ? " " + color : "" ) + "'></div>";
   if ( icon ) {
     customIconHtml += "<span class='marker-icon'><img src='" + icon + "'  alt='marker icon' /></span>";
   }
