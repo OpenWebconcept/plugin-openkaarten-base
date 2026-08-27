@@ -275,6 +275,7 @@ class Locations {
 		$default_custom_color = get_post_meta( $datalayer_id, 'default_marker_color_custom', true );
 		$color                = ! empty( $default_custom_color ) ? $default_custom_color : get_post_meta( $datalayer_id, 'default_marker_color', true );
 		$icon                 = get_post_meta( $datalayer_id, 'default_marker_icon', true );
+		$pattern              = get_post_meta( $datalayer_id, 'default_marker_pattern', true );
 
 		$datalayer_url_type = get_post_meta( $datalayer_id, 'datalayer_url_type', true ) ? : 'import';
 
@@ -311,13 +312,17 @@ class Locations {
 					if ( ! empty( $marker_data['marker_icon'] ) ) {
 						$icon = $marker_data['marker_icon'];
 					}
+					if ( ! empty( $marker_data['marker_pattern'] ) ) {
+						$pattern = $marker_data['marker_pattern'];
+					}
 				}
 			}
 		}
 
 		return [
-			'color' => $color,
-			'icon'  => $icon,
+			'color'   => $color,
+			'icon'    => $icon,
+			'pattern' => $pattern,
 		];
 	}
 

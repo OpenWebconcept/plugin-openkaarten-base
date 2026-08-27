@@ -537,6 +537,36 @@ class Datalayers {
 	}
 
 	/**
+	 * Returns an array of predefined marker-pattern options.
+	 *
+	 * Patterns give each colored area a unique fill texture in addition to its
+	 * color, so areas stay distinguishable in black-and-white print, for people
+	 * with color blindness, and at low screen quality (WCAG 1.4.1). The keys are
+	 * stable slugs that the frontend plugin maps to actual SVG fill patterns; the
+	 * empty key is "no pattern" (solid fill), which keeps existing datalayers
+	 * rendering exactly as before.
+	 *
+	 * @return array Associative array of marker-pattern slugs and their labels.
+	 */
+	public static function get_marker_pattern_options() {
+		$default_patterns = [
+			''                  => __( 'None (solid)', 'openkaarten-base' ),
+			'diagonal-forward'  => __( 'Diagonal lines (forward)', 'openkaarten-base' ),
+			'diagonal-backward' => __( 'Diagonal lines (backward)', 'openkaarten-base' ),
+			'horizontal'        => __( 'Horizontal lines', 'openkaarten-base' ),
+			'vertical'          => __( 'Vertical lines', 'openkaarten-base' ),
+			'grid'              => __( 'Grid', 'openkaarten-base' ),
+			'crosshatch'        => __( 'Crosshatch', 'openkaarten-base' ),
+			'dots'              => __( 'Dots', 'openkaarten-base' ),
+			'rings'             => __( 'Rings', 'openkaarten-base' ),
+			'checkerboard'      => __( 'Checkerboard', 'openkaarten-base' ),
+			'zigzag'            => __( 'Zigzag', 'openkaarten-base' ),
+		];
+
+		return apply_filters( 'openkaarten_marker_pattern_options', $default_patterns );
+	}
+
+	/**
 	 * Returns an associative array mapping the predefined marker-color class
 	 * names to their hex color values.
 	 *
@@ -684,6 +714,17 @@ class Datalayers {
 
 		$cmb->add_field(
 			[
+				'name'    => __( 'Default marker pattern', 'openkaarten-base' ),
+				'desc'    => __( 'Select a fill pattern for area (polygon) markers. Patterns keep areas distinguishable in black-and-white, for people with color blindness, and at low screen quality (WCAG 1.4.1).', 'openkaarten-base' ),
+				'id'      => 'default_marker_pattern',
+				'type'    => 'select',
+				'default' => '', // No pattern (solid fill).
+				'options' => self::get_marker_pattern_options(),
+			]
+		);
+
+		$cmb->add_field(
+			[
 				'name'       => __( 'Field to customize marker on', 'openkaarten-base' ),
 				'desc'       => __( 'Select the field that determines what marker should be shown.', 'openkaarten-base' ),
 				'id'         => 'marker_field',
@@ -755,6 +796,18 @@ class Datalayers {
 						]
 					),
 				],
+			]
+		);
+
+		$cmb->add_group_field(
+			$group_field_id,
+			[
+				'name'    => __( 'Marker pattern', 'openkaarten-base' ),
+				'desc'    => __( 'Optional. Select a fill pattern for this area (polygon) marker to override the default pattern above.', 'openkaarten-base' ),
+				'id'      => 'marker_pattern',
+				'type'    => 'select',
+				'default' => '',
+				'options' => self::get_marker_pattern_options(),
 			]
 		);
 

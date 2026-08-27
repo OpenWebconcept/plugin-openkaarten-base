@@ -182,6 +182,7 @@ class Helper {
 		$item_data['properties']['marker']['icon']  = Locations::get_location_marker_url( $item_marker['icon'] );
 		// In new versions of the Frontend plugin, we use icon_name, but for backwards compatibility we also keep icon.
 		$item_data['properties']['marker']['icon_name'] = $item_marker['icon'];
+		$item_data['properties']['marker']['pattern']   = $item_marker['pattern'];
 
 		if ( isset( $projection ) ) {
 			$item_data = Conversion::convert_coordinates( $item_data, $projection );

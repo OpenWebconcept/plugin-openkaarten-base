@@ -1,4 +1,7 @@
 # Changelog
+## v0.4.0
+- Added: marker fill patterns for area (polygon) markers (WCAG 1.4.1). A "Default marker pattern" select is available for the datalayer and a per-value "Marker pattern" select for each marker, offering 10 base patterns (diagonal lines forward/backward, horizontal, vertical, grid, crosshatch, dots, rings, checkerboard, zigzag) plus "None (solid)". The chosen pattern is exposed per feature as `properties.marker.pattern` in the GeoJSON output (both live and import datalayers) so the frontend can render each colored area with a distinguishing texture in addition to its color.
+
 ## v0.3.4
 - Added: support for custom marker hex colors. A color picker is now available for the datalayer default marker color and for each per-value marker, so you can override the predefined marker colors with any custom hex value. Custom colors are applied inline on the map, while preset colors keep using their `marker-<name>` CSS classes.
 
