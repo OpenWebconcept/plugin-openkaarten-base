@@ -174,6 +174,7 @@ class Datalayers {
 				'options'    => [
 					'fileinput' => __( 'File', 'openkaarten-base' ),
 					'url'       => __( 'URL', 'openkaarten-base' ),
+					'melvin'    => __( 'Melvin (NDW)', 'openkaarten-base' ),
 				],
 				'attributes' => [
 					'data-validation' => 'required',
@@ -256,6 +257,51 @@ class Datalayers {
 			]
 		);
 
+		$cmb->add_field(
+			[
+				'name'       => __( 'Melvin username', 'openkaarten-base' ),
+				'id'         => 'melvin_username',
+				'type'       => 'text',
+				'desc'       => __( 'A Melvin account that NDW has given API access. The situations of the coming week are imported every hour.', 'openkaarten-base' ),
+				'attributes' => [
+					'autocomplete'           => 'off',
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'melvin',
+				],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name'            => __( 'Melvin password', 'openkaarten-base' ),
+				'id'              => 'melvin_password',
+				'type'            => 'text',
+				'desc'            => __( 'Leave empty to keep the current password.', 'openkaarten-base' ),
+				// Never print the stored password back into the form.
+				'escape_cb'       => '__return_empty_string',
+				'sanitization_cb' => [ 'Openkaarten_Base_Plugin\Admin\Datalayers', 'sanitize_melvin_password' ],
+				'attributes'      => [
+					'type'                   => 'password',
+					'autocomplete'           => 'new-password',
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'melvin',
+				],
+			]
+		);
+
+		$cmb->add_field(
+			[
+				'name'       => __( 'Melvin area IDs', 'openkaarten-base' ),
+				'id'         => 'melvin_area_ids',
+				'type'       => 'text',
+				'desc'       => __( 'Comma-separated Melvin area IDs, for example 443 for the province of Zuid-Holland.', 'openkaarten-base' ),
+				'attributes' => [
+					'data-conditional-id'    => 'datalayer_type',
+					'data-conditional-value' => 'melvin',
+				],
+			]
+		);
+
 		$cmb = new_cmb2_box(
 			[
 				'id'           => 'datalayer_import_metabox',
@@ -331,7 +377,7 @@ class Datalayers {
 				'attributes' => [
 					'required'               => 'required',
 					'data-conditional-id'    => 'datalayer_type',
-					'data-conditional-value' => wp_json_encode( [ 'fileinput', 'url' ] ),
+					'data-conditional-value' => wp_json_encode( [ 'fileinput', 'url', 'melvin' ] ),
 				],
 				'default'    => ! empty( $source_fields_for_title_mapping ) ? $source_fields_for_title_mapping[0] : '',
 			]
@@ -848,11 +894,7 @@ class Datalayers {
 			return false;
 		}
 
-		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
-		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
-
-		return ( ! empty( $datalayer_file ) && 'fileinput' === self::$datalayer_type ) ||
-				( ! empty( $datalayer_url ) && 'url' === self::$datalayer_type );
+		return self::has_datalayer_source( $cmb->object_id() );
 	}
 
 	/**
@@ -867,11 +909,7 @@ class Datalayers {
 			return false;
 		}
 
-		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
-		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
-
-		return ( ! empty( $datalayer_file ) && 'fileinput' === self::$datalayer_type ) ||
-				( ! empty( $datalayer_url ) && 'url' === self::$datalayer_type );
+		return self::has_datalayer_source( $cmb->object_id() );
 	}
 
 	/**
@@ -893,7 +931,7 @@ class Datalayers {
 		// Check if title field mapping is done.
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
 
-		return 'url' === self::$datalayer_type && 'import' === self::$datalayer_url_type && ! empty( $title_field_mapping );
+		return in_array( self::$datalayer_type, [ 'url', 'melvin' ], true ) && 'import' === self::$datalayer_url_type && ! empty( $title_field_mapping );
 	}
 
 	/**
@@ -908,10 +946,7 @@ class Datalayers {
 			return false;
 		}
 
-		$datalayer_file = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
-		$datalayer_url  = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
-
-		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) );
+		return self::has_datalayer_source( $cmb->object_id() );
 	}
 
 	/**
@@ -934,11 +969,29 @@ class Datalayers {
 			return true;
 		}
 
-		$datalayer_file      = get_post_meta( $cmb->object_id(), 'datalayer_file', true );
-		$datalayer_url       = get_post_meta( $cmb->object_id(), 'datalayer_url', true );
 		$title_field_mapping = get_post_meta( $cmb->object_id(), 'title_field_mapping', true );
 
-		return ( ! empty( $datalayer_file ) || ! empty( $datalayer_url ) ) && ! empty( $title_field_mapping );
+		return self::has_datalayer_source( $cmb->object_id() ) && ! empty( $title_field_mapping );
+	}
+
+	/**
+	 * Check if the source of the selected datalayer type is filled in.
+	 *
+	 * @param int $object_id The object ID.
+	 *
+	 * @return bool
+	 */
+	private static function has_datalayer_source( $object_id ) {
+		switch ( self::$datalayer_type ) {
+			case 'fileinput':
+				return ! empty( get_post_meta( $object_id, 'datalayer_file', true ) );
+			case 'url':
+				return ! empty( get_post_meta( $object_id, 'datalayer_url', true ) );
+			case 'melvin':
+				return ! empty( get_post_meta( $object_id, 'melvin_area_ids', true ) );
+			default:
+				return false;
+		}
 	}
 
 	/**
@@ -962,22 +1015,10 @@ class Datalayers {
 			return $value;
 		}
 
-		switch ( self::$datalayer_type ) {
-			case 'fileinput':
-			default:
-				$datalayer_file = get_post_meta( $object_id, 'datalayer_file_id', true );
-				if ( ! $datalayer_file ) {
-					return $value;
-				}
-				$file = get_attached_file( $datalayer_file );
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- file_get_contents is allowed here.
-				$file_contents = file_get_contents( $file );
+		$file_contents = self::get_datalayer_data( $object_id, self::$datalayer_type );
 
-				break;
-			case 'url':
-				$file_contents = self::fetch_datalayer_url_data( $object_id );
-
-				break;
+		if ( ! $file_contents ) {
+			return $value;
 		}
 
 		// Check if data is a WP_Error.
@@ -1119,6 +1160,51 @@ class Datalayers {
 	}
 
 	/**
+	 * Get the raw source data of a datalayer.
+	 *
+	 * @param int    $object_id The object ID.
+	 * @param string $datalayer_type The datalayer type.
+	 * @param string $override_datalayer_url The overridden datalayer URL. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
+	 *
+	 * @return string|false|\WP_Error
+	 */
+	public static function get_datalayer_data( $object_id, $datalayer_type, $override_datalayer_url = '' ) {
+		switch ( $datalayer_type ) {
+			case 'url':
+				return self::fetch_datalayer_url_data( $object_id, $override_datalayer_url );
+			case 'melvin':
+				return Melvin::fetch_datalayer_data( $object_id );
+			case 'fileinput':
+			default:
+				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
+
+				if ( empty( $file ) ) {
+					return false;
+				}
+
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
+				return file_get_contents( $file );
+		}
+	}
+
+	/**
+	 * Keep the stored Melvin password when the field is submitted empty, since the form never shows it.
+	 *
+	 * @param string      $value The submitted value.
+	 * @param array       $field_args The field arguments.
+	 * @param \CMB2_Field $field The field object.
+	 *
+	 * @return string
+	 */
+	public static function sanitize_melvin_password( $value, $field_args, $field ) {
+		if ( '' === (string) $value ) {
+			return get_post_meta( $field->object_id, 'melvin_password', true );
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Fetch the data from an external source URL.
 	 *
 	 * @param int    $datalayer_id The datalayer ID.
@@ -1189,23 +1275,7 @@ class Datalayers {
 		}
 
 		// If no source fields are set, get the source fields from the datalayer file.
-		switch ( $datalayer_type ) {
-			case 'fileinput':
-			default:
-				$file = get_attached_file( get_post_meta( $object_id, 'datalayer_file_id', true ) );
-
-				if ( empty( $file ) ) {
-					return [];
-				}
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
-				$data = file_get_contents( $file );
-
-				break;
-			case 'url':
-				$data = self::fetch_datalayer_url_data( $object_id, $override_datalayer_url );
-
-				break;
-		}
+		$data = self::get_datalayer_data( $object_id, $datalayer_type, $override_datalayer_url );
 
 		if ( ! $data ) {
 			return [];
