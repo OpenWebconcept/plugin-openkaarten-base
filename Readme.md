@@ -71,6 +71,7 @@ You can add a datalayer in the following ways:
 1. Import a file: Select a file to import. The file will be uploaded, the datalayer will be created and the locations will be imported.
 2. Add a URL: Enter a URL to import a file from. The content of the URL will be downloaded, the datalayer will be created and the locations will be imported. You have the option to sync the datalayer. This will import the locations from the URL and update the locations of the datalayer.
 3. Link a live URL: Enter a URL to link a live datalayer. The datalayer will be created. The locations won't be imported. The locations will be shown directly from the source file.
+4. Melvin (NDW): Enter the username and password of a Melvin account that NDW has given API access, and the Melvin area IDs. The published roadworks and events of the coming week are imported from the [Melvin GeoJSON API](https://melvin.ndw.nu) and synced every hour. Personal data (`createdBy`, `lastChangedBy`) and attachments are left out, nested properties are flattened (e.g. `location_road`, `location_city`, `roadAuthority_name`) and the execution periods are summarized in `startDate` and `endDate`.
 
 ### GeoJSON specifications ###
 GeoJSON is the preferred format for importing datalayers.

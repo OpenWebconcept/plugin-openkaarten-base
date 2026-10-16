@@ -299,20 +299,13 @@ class Importer {
 	 * @return bool
 	 */
 	public static function import_locations( $post_id, $title_field_value ) {
-		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
+		$data = Datalayers::get_datalayer_data( $post_id, get_post_meta( $post_id, 'datalayer_type', true ) );
 
-		switch ( $datalayer_type ) {
-			case 'fileinput':
-			default:
-				$file = get_attached_file( get_post_meta( $post_id, 'datalayer_file_id', true ) );
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- We need to read the file contents.
-				$data = file_get_contents( $file );
+		// Keep the current locations when the source can't be fetched.
+		if ( is_wp_error( $data ) ) {
+			Helper::add_error_message( $data->get_error_message() );
 
-				break;
-			case 'url':
-				$data = Datalayers::fetch_datalayer_url_data( $post_id );
-
-				break;
+			return false;
 		}
 
 		// Check if data is valid GeoJSON and if we can parse it. If not, a IOException will be thrown.
@@ -328,7 +321,7 @@ class Importer {
 
 			// Catch all the fields in brackets from the title fields and replace them with the actual values.
 			$title_fields = $title_field_value;
-			if ( empty( $title_fields ) ) {
+			if ( empty( $title_fields ) && $components ) {
 				$title_fields = '{' . array_key_first( $components[0]->getData() ) . '}';
 			}
 
@@ -337,14 +330,14 @@ class Importer {
 				$title_fields = '{title}';
 			}
 
-			if ( count( $components ) ) {
-				global $wpdb;
+			// Remove the current locations even when the source is now empty, so ended items don't linger.
+			global $wpdb;
 
-				// Create a custom query to get the location ID's, where the location_datalayer_id is equal to the post ID.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
-				$locations = $wpdb->get_results(
-					$wpdb->prepare(
-						"SELECT p.ID FROM {$wpdb->posts} p
+			// Create a custom query to get the location ID's, where the location_datalayer_id is equal to the post ID.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom query is required here.
+			$locations = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT p.ID FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
 			LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id
             WHERE p.post_type = 'owc_ok_location'
@@ -352,45 +345,44 @@ class Importer {
               AND pm2.meta_key = 'location_datalayer_id'
               AND pm2.meta_value = %s
             ORDER BY p.post_title ASC",
-						$post_id
-					)
-				);
+					$post_id
+				)
+			);
 
-				foreach ( $locations as $location ) {
-					wp_delete_post( $location->ID, true );
-				}
+			foreach ( $locations as $location ) {
+				wp_delete_post( $location->ID, true );
+			}
 
-				foreach ( $components as $component ) {
-					$properties = $component->getData();
+			foreach ( $components as $component ) {
+				$properties = $component->getData();
 
-					$title = self::create_title_from_mapping( $properties, $title_fields );
+				$title = self::create_title_from_mapping( $properties, $title_fields );
 
-					$location    = [
-						'post_title'  => $title,
-						'post_type'   => 'owc_ok_location',
-						'post_status' => 'publish',
-					];
-					$location_id = wp_insert_post( $location );
+				$location    = [
+					'post_title'  => $title,
+					'post_type'   => 'owc_ok_location',
+					'post_status' => 'publish',
+				];
+				$location_id = wp_insert_post( $location );
 
-					update_post_meta( $location_id, 'location_datalayer_id', $post_id );
+				update_post_meta( $location_id, 'location_datalayer_id', $post_id );
 
-					foreach ( $properties as $key => $value ) {
-						// Save true and false as text, so you can use it in customizing the markers.
-						if ( is_bool( $value ) ) {
-							$value = $value ? 'true' : 'false';
-						}
-
-						update_post_meta( $location_id, 'field_' . $key, $value );
+				foreach ( $properties as $key => $value ) {
+					// Save true and false as text, so you can use it in customizing the markers.
+					if ( is_bool( $value ) ) {
+						$value = $value ? 'true' : 'false';
 					}
 
-					$geometry = self::process_geometry( $component );
-
-					update_post_meta( $location_id, 'geometry', wp_slash( $geometry ) );
-
-					// Set date of last import.
-					update_post_meta( $post_id, 'datalayer_last_import', current_time( 'mysql' ) );
+					update_post_meta( $location_id, 'field_' . $key, $value );
 				}
+
+				$geometry = self::process_geometry( $component );
+
+				update_post_meta( $location_id, 'geometry', wp_slash( $geometry ) );
 			}
+
+			// Set date of last import.
+			update_post_meta( $post_id, 'datalayer_last_import', current_time( 'mysql' ) );
 		} catch ( IOException $e ) {
 			// Add error message via admin notice.
 			add_action(
@@ -512,21 +504,29 @@ class Importer {
 	 * @return void
 	 */
 	public static function sync_datalayer_locations() {
-		// Get all datalayers which are of type url and are of url type import.
+		// Get all datalayers which are of type melvin, or of type url and of url type import.
 		$args = [
 			'post_type'      => 'owc_ok_datalayer',
 			'posts_per_page' => -1,
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- We need to query on meta values.
 			'meta_query'     => [
-				[
-					'key'     => 'datalayer_url_type',
-					'value'   => 'live',
-					'compare' => '!=',
-				],
+				'relation' => 'OR',
 				[
 					'key'     => 'datalayer_type',
-					'value'   => 'url',
+					'value'   => 'melvin',
 					'compare' => '=',
+				],
+				[
+					[
+						'key'     => 'datalayer_url_type',
+						'value'   => 'live',
+						'compare' => '!=',
+					],
+					[
+						'key'     => 'datalayer_type',
+						'value'   => 'url',
+						'compare' => '=',
+					],
 				],
 			],
 		];
