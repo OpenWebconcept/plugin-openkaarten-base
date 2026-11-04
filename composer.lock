@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8a34a20dc4a3d6af1db8f4791ca0075f",
+    "content-hash": "ee3df0c593b9dca3b79eb73f16744171",
     "packages": [
         {
             "name": "acato-plugins/cmb2-flexible-content",
@@ -163,6 +163,63 @@
             "time": "2026-02-19T12:55:21+00:00"
         },
         {
+            "name": "cmb2/cmb2",
+            "version": "v2.13.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/CMB2/CMB2.git",
+                "reference": "c4d9cfa1a1a8707b22140a5bec1749b74f9829f0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/CMB2/CMB2/zipball/c4d9cfa1a1a8707b22140a5bec1749b74f9829f0",
+                "reference": "c4d9cfa1a1a8707b22140a5bec1749b74f9829f0",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">7.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.6",
+                "yoast/phpunit-polyfills": "^1.1"
+            },
+            "suggest": {
+                "composer/installers": "~1.0"
+            },
+            "type": "wordpress-plugin",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Justin Sternberg",
+                    "email": "justin@dsgnwrks.pro",
+                    "homepage": "https://dsgnwrks.pro",
+                    "role": "Developer"
+                },
+                {
+                    "name": "WebDevStudios",
+                    "email": "contact@webdevstudios.com",
+                    "homepage": "https://github.com/WebDevStudios",
+                    "role": "Developer"
+                }
+            ],
+            "description": "CMB2 is a metabox, custom fields, and forms library for WordPress that will blow your mind.",
+            "homepage": "https://github.com/CMB2/CMB2",
+            "keywords": [
+                "metabox",
+                "plugin",
+                "wordpress"
+            ],
+            "support": {
+                "issues": "https://github.com/CMB2/CMB2/issues",
+                "source": "http://wordpress.org/support/plugin/cmb2"
+            },
+            "time": "2026-10-26T23:16:04+00:00",
+            "published-time": "2026-10-26T23:21:02+00:00"
+        },
+        {
             "name": "composer/installers",
             "version": "v2.3.0",
             "source": {
@@ -307,24 +364,6 @@
                 }
             ],
             "time": "2024-06-24T20:46:46+00:00"
-        },
-        {
-            "name": "wpackagist-plugin/cmb2",
-            "version": "2.11.0",
-            "source": {
-                "type": "svn",
-                "url": "https://plugins.svn.wordpress.org/cmb2/",
-                "reference": "trunk"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://downloads.wordpress.org/plugin/cmb2.zip?timestamp=1712086610"
-            },
-            "require": {
-                "composer/installers": "^1.0 || ^2.0"
-            },
-            "type": "wordpress-plugin",
-            "homepage": "https://wordpress.org/plugins/cmb2/"
         }
     ],
     "packages-dev": [
@@ -1051,10 +1090,10 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
-    "plugin-api-version": "2.6.0"
+    "platform": {},
+    "platform-dev": {},
+    "plugin-api-version": "2.11.0"
 }
