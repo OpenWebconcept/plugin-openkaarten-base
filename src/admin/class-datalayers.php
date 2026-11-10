@@ -53,6 +53,20 @@ class Datalayers {
 	private static $datalayer_fetch_error = false;
 
 	/**
+	 * Per-request cache of fetched datalayer URL responses, keyed by URL.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private static $datalayer_url_data_cache = [];
+
+	/**
+	 * Per-request cache of the overridden source_fields meta value, keyed by object ID, datalayer type and URL.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private static $source_fields_override_cache = [];
+
+	/**
 	 * The singleton instance of this class.
 	 *
 	 * @access private
@@ -962,6 +976,24 @@ class Datalayers {
 			return $value;
 		}
 
+		// CMB2 applies this filter for every read of the (repeatable group) field, so compute the result only once per request.
+		$cache_key = $object_id . '|' . self::$datalayer_type . '|' . self::$datalayer_url;
+		if ( ! array_key_exists( $cache_key, self::$source_fields_override_cache ) ) {
+			self::$source_fields_override_cache[ $cache_key ] = self::compute_source_fields_override_value( $value, $object_id );
+		}
+
+		return self::$source_fields_override_cache[ $cache_key ];
+	}
+
+	/**
+	 * Build the default source_fields value from the datalayer file or URL.
+	 *
+	 * @param mixed $value The original (non-overridden) value.
+	 * @param int   $object_id The object ID.
+	 *
+	 * @return mixed
+	 */
+	private static function compute_source_fields_override_value( $value, $object_id ) {
 		switch ( self::$datalayer_type ) {
 			case 'fileinput':
 			default:
@@ -1134,6 +1166,22 @@ class Datalayers {
 			$url = get_post_meta( $datalayer_id, 'datalayer_url', true );
 		}
 
+		// The edit screen requests the same URL several times per page load; fetch it only once per request.
+		if ( ! array_key_exists( $url, self::$datalayer_url_data_cache ) ) {
+			self::$datalayer_url_data_cache[ $url ] = self::remote_fetch_datalayer_url( $url );
+		}
+
+		return self::$datalayer_url_data_cache[ $url ];
+	}
+
+	/**
+	 * Perform the remote request for a datalayer URL.
+	 *
+	 * @param string $url The datalayer URL.
+	 *
+	 * @return mixed
+	 */
+	private static function remote_fetch_datalayer_url( $url ) {
 		$response = wp_remote_get( $url );
 
 		// Check if response is a WP_Error.
