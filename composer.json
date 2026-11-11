@@ -10,22 +10,12 @@
             "role": "Backend WordPress Developer"
         }
     ],
-    "repositories": [
-        {
-            "type": "composer",
-            "url": "https://wpackagist.org",
-            "only": [
-                "wpackagist-plugin/*",
-                "wpackagist-theme/*"
-            ]
-        }
-    ],
     "require" : {
         "composer/installers" : "^1.0 || ^2.0",
         "acato-plugins/geophp": "*",
-        "wpackagist-plugin/cmb2": "*",
         "acato-plugins/cmb2-flexible-content": "*",
-        "acato/openkaarten-base-functions": "*"
+        "acato/openkaarten-base-functions": "*",
+        "cmb2/cmb2": "^2.13"
     },
     "require-dev" : {
         "acato/wp-pre-commit-hook": "*",
