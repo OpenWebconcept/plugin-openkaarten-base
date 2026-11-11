@@ -1,4 +1,8 @@
 # Changelog
+## v0.3.5
+- Fixed: the edit screen of a datalayer with a live URL source could time out (504) on slow or large sources. The external URL was requested again for every read of the source fields mapping (once per group row and subfield) plus once more for the map preview. The response is now cached per URL for the current request, the source fields mapping is computed only once per request, and the map preview reuses the same fetch, so the edit screen makes a single external request. (#86, Thank you @richardkorthuis et al)
+- Changed: CMB2 is now required as `cmb2/cmb2` (^2.13) directly from Packagist instead of `wpackagist-plugin/cmb2`; the wpackagist repository has been removed from composer.json. This bumps the bundled CMB2 from 2.11.0 to 2.13.5. Projects that also require `wpackagist-plugin/cmb2` should switch to `cmb2/cmb2` to avoid both packages installing into the same `cmb2` plugin directory. (#85, Thank you @ictbeheer et al)
+
 ## v0.3.4
 - Added: support for custom marker hex colors. A color picker is now available for the datalayer default marker color and for each per-value marker, so you can override the predefined marker colors with any custom hex value. Custom colors are applied inline on the map, while preset colors keep using their `marker-<name>` CSS classes.
 
