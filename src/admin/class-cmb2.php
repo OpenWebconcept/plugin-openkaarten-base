@@ -116,16 +116,13 @@ class Cmb2 {
 		if ( 'live' === $datalayer_url_type ) {
 
 			// Retrieve the objects from the source file.
-			$datalayer_url        = get_post_meta( $object_id, 'datalayer_url', true );
-			$datalayer_file_input = wp_remote_get( $datalayer_url );
+			// Uses the per-request cache, so the URL already fetched for the field mapping is not requested again.
+			$datalayer_url      = get_post_meta( $object_id, 'datalayer_url', true );
+			$feature_collection = Datalayers::fetch_datalayer_url_data( $object_id, $datalayer_url );
 
-			if ( is_wp_error( $datalayer_file_input ) ) {
+			if ( is_wp_error( $feature_collection ) ) {
 				return;
 			}
-
-			// Get the feature collection from the source file.
-			$feature_collection = wp_remote_retrieve_body( $datalayer_file_input );
-
 		} else {
 
 			// Get the feature collection from the datalayer.
