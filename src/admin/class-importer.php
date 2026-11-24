@@ -180,9 +180,9 @@ class Importer {
 			// Update the source fields.
 			update_post_meta( $post_id, 'source_fields', $source_fields_db );
 
-			// Import the locations.
+			// Import the locations. Pass the new URL, as it is not saved yet at this point.
 			if ( 'import' === $datalayer_url_type ) {
-				self::import_locations( $post_id, $title_fields );
+				self::import_locations( $post_id, $title_fields, $meta_value );
 			}
 
 			// Force update the datalayer url, but without update_post_meta, because this will create an infinite loop.
@@ -295,10 +295,11 @@ class Importer {
 	 *
 	 * @param int    $post_id    The post ID.
 	 * @param string $title_field_value The title field value.
+	 * @param string $override_datalayer_url The overridden datalayer URL. This is used when calling the function from the update_post_meta hook for the datalayer URL field.
 	 *
 	 * @return bool
 	 */
-	public static function import_locations( $post_id, $title_field_value ) {
+	public static function import_locations( $post_id, $title_field_value, $override_datalayer_url = '' ) {
 		$datalayer_type = get_post_meta( $post_id, 'datalayer_type', true );
 
 		switch ( $datalayer_type ) {
@@ -310,9 +311,16 @@ class Importer {
 
 				break;
 			case 'url':
-				$data = Datalayers::fetch_datalayer_url_data( $post_id );
+				$data = Datalayers::fetch_datalayer_url_data( $post_id, $override_datalayer_url );
 
 				break;
+		}
+
+		// Keep the existing locations when the source can't be fetched.
+		if ( is_wp_error( $data ) ) {
+			Helper::add_error_message( $data->get_error_message() );
+
+			return false;
 		}
 
 		// Check if data is valid GeoJSON and if we can parse it. If not, a IOException will be thrown.
